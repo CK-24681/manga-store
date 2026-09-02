@@ -1,0 +1,14 @@
+GET http://localhost:8080/api/manga?page=1&limit=5
+###
+GET http://localhost:8080/api/manga/best-sellers
+###
+POST http://localhost:8080/api/cart/checkout
+Content-Type: application/json
+
+{
+  "items": [],
+  "shippingAddress": {"fullName": "Test"},
+  "paymentMethod": "Test",
+  "promoCode": "MANGA20"
+}
+

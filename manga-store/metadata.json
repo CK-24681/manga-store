@@ -1,0 +1,6 @@
+{
+  "name": "Mangazon - Best-Selling Manga Store",
+  "description": "Amazon-style best-selling manga e-commerce platform with real-time cart, volume selector, look-inside preview, multi-language translation (PT, EN, ES, JA), reading guides, and Java Spring REST backend architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
