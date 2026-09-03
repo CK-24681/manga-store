@@ -1,0 +1,14 @@
+{
+  "name": "mangazon-store-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Workspace root for Mangazon Store - Proxies commands to manga-store package",
+  "scripts": {
+    "dev": "npm --prefix manga-store run dev",
+    "build": "npm --prefix manga-store run build",
+    "start": "npm --prefix manga-store start",
+    "preview": "npm --prefix manga-store preview",
+    "clean": "npm --prefix manga-store run clean",
+    "lint": "npm --prefix manga-store run lint"
+  }
+}
