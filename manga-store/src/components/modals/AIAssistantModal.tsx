@@ -25,19 +25,38 @@ const QUICK_SUGGESTIONS = [
 function renderFormattedMessage(text: string) {
   const paragraphs = text.split('\n');
   return paragraphs.map((paragraph, pIdx) => {
-    const parts = paragraph.split(/(\*\*.*?\*\*)/g);
+    const trimmed = paragraph.trim();
+    if (!trimmed) {
+      return <div key={pIdx} className="h-1.5" />;
+    }
+
+    const isBullet = trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ');
+    const content = isBullet ? trimmed.replace(/^(\*|-|•)\s+/, '') : paragraph;
+
+    const parts = content.split(/(\*\*.*?\*\*)/g);
+    const renderedParts = parts.map((part, partIdx) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={partIdx} className="font-bold text-gray-950">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <React.Fragment key={partIdx}>{part}</React.Fragment>;
+    });
+
+    if (isBullet) {
+      return (
+        <div key={pIdx} className="flex items-start gap-2 mt-1.5 ml-1 text-gray-800">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#FF9900] mt-1.5 flex-shrink-0" />
+          <div className="flex-1 leading-relaxed text-xs sm:text-sm">{renderedParts}</div>
+        </div>
+      );
+    }
+
     return (
-      <p key={pIdx} className={pIdx > 0 ? 'mt-1.5' : ''}>
-        {parts.map((part, partIdx) => {
-          if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-            return (
-              <strong key={partIdx} className="font-bold text-gray-950">
-                {part.slice(2, -2)}
-              </strong>
-            );
-          }
-          return <React.Fragment key={partIdx}>{part}</React.Fragment>;
-        })}
+      <p key={pIdx} className={pIdx > 0 ? 'mt-2 leading-relaxed' : 'leading-relaxed'}>
+        {renderedParts}
       </p>
     );
   });

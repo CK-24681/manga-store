@@ -121,7 +121,14 @@ app.post('/api/ai/ask', async (req, res) => {
 
     // Se houver uma chave real configurada no .env, chama a API Gemini via @google/genai com timeout resiliente de 25s
     if (apiKey && apiKey !== 'MY_GEMINI_API_KEY' && apiKey.trim().length > 10) {
-      const modelsToTry = ['gemini-3.6-flash', 'gemini-1.5-flash'];
+      const modelsToTry = [
+        'gemini-flash-lite-latest',
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-flash-latest',
+        'gemini-3.5-flash',
+        'gemini-pro-latest'
+      ];
       for (const modelName of modelsToTry) {
         try {
           const ai = new GoogleGenAI({ apiKey });
