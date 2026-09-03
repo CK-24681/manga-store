@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Eye, ShoppingCart, Check } from 'lucide-react';
+import { Star, Eye, ShoppingCart, Check, ChevronDown } from 'lucide-react';
 import { MangaFormat, MangaItem } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -163,29 +163,34 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Volume Selector */}
       <div 
         onClick={(e) => e.stopPropagation()} 
-        className="mt-3 flex items-center justify-between text-[11px] bg-gray-50 p-1.5 rounded-lg border border-gray-200"
+        className="mt-3 flex items-center gap-2 text-xs bg-gray-50/80 border border-gray-200 rounded-lg p-1.5"
       >
-        <span className="text-gray-600 font-bold">Volume:</span>
-        <select
-          id={`vol-select-${manga.id}`}
-          value={selectedVolume}
-          onChange={(e) => setSelectedVolume(Number(e.target.value))}
-          className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 font-bold focus:ring-1 focus:ring-[#FF9900] focus:outline-none cursor-pointer"
-        >
-          {Array.from({ length: Math.min(totalVolumes, 60) }).map((_, idx) => {
-            const v = idx + 1;
-            return (
-              <option key={v} value={v}>
-                Vol. {v} (Cap. {(v - 1) * 9 + 1}–{v * 9})
+        <label htmlFor={`vol-select-${manga.id}`} className="text-gray-600 font-bold text-[11px] flex-shrink-0 pl-1 select-none">
+          Volume:
+        </label>
+        <div className="relative flex-1 min-w-0">
+          <select
+            id={`vol-select-${manga.id}`}
+            value={selectedVolume}
+            onChange={(e) => setSelectedVolume(Number(e.target.value))}
+            className="w-full bg-white border border-gray-300 hover:border-gray-400 rounded-md pl-2 pr-6 py-1 text-xs text-gray-900 font-semibold truncate focus:ring-1 focus:ring-[#FF9900] focus:border-[#FF9900] focus:outline-none cursor-pointer appearance-none shadow-2xs"
+          >
+            {Array.from({ length: Math.min(totalVolumes, 60) }).map((_, idx) => {
+              const v = idx + 1;
+              return (
+                <option key={v} value={v}>
+                  Vol. {v} (Cap. {(v - 1) * 9 + 1}–{v * 9})
+                </option>
+              );
+            })}
+            {totalVolumes > 60 && (
+              <option value={totalVolumes}>
+                Vol. {totalVolumes} (Mais Recente)
               </option>
-            );
-          })}
-          {totalVolumes > 60 && (
-            <option value={totalVolumes}>
-              Vol. {totalVolumes} (Mais Recente)
-            </option>
-          )}
-        </select>
+            )}
+          </select>
+          <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
       </div>
 
       {/* Actions */}
