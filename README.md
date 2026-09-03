@@ -79,15 +79,14 @@ mvn test
 ---
 
 ### 3. Executando o Frontend (React + Vite + Express)
-O frontend consome os endpoints do Spring Boot e provê a interface com seletor de volumes, IA e carrinho em tempo real.
+O frontend consome os endpoints do Spring Boot e provê a interface com seletor de volumes, IA e carrinho em tempo real. Você pode executar diretamente da raiz ou da pasta `manga-store`:
 
 ```bash
+# Opção A: Diretamente da raiz do projeto
+npm run dev
+
+# Opção B: A partir da pasta manga-store
 cd manga-store
-
-# Instalar dependências
-npm install
-
-# Iniciar servidor de desenvolvimento (Porta 5173)
 npm run dev
 
 # Validação de tipos (Lint)
@@ -107,8 +106,8 @@ O projeto cumpre integralmente os 4 pilares exigidos na disciplina de Inteligên
 
 | Requisito | Especificação do Projeto | Implementação Técnica |
 | :--- | :--- | :--- |
-| **1. Frontend Funcional** | Campo de texto para a pergunta, botão de envio via JavaScript e espaço reservado (`<div>`/`<ul>`) para injeção da resposta da IA. | Componente `AIAssistantModal.tsx` com mascote oficial exclusivo Mangazon e design clean estilo Amazon: `<input id="ai-question-input">`, `<button id="ai-submit-button">` capturando evento de formulário, parser inteligente de Markdown (sem asteriscos literais) e `<div id="ai-response-container">` com renderização dinâmica. Acesso direto pelo botão flutuante com o avatar do mascote (`#floating-ai-assistant-btn`). |
-| **2. Servidor Seguro & IA Dinâmica** | Backend configurado (Node.js/Spring) para intermediar chamadas à IA de forma segura sem expor credenciais. | Rota `POST /api/ai/ask` configurada com o SDK oficial `@google/genai` utilizando o recurso nativo **`systemInstruction`** (`config.systemInstruction`), parâmetros de amostragem controlada (`temperature: 0.3`, `maxOutputTokens: 1000`) e **Engenharia de Prompt Avançada com Limites Estritos**: (1) **Limite de Escopo e Proteção Off-Topic** (recusa educada de temas alheios a mangás e loja), (2) **Blindagem Anti-Jailbreak** (proteção de diretrizes internas), (3) **Anti-Alucinação** (precisão com editoras e lançamentos nacionais) e (4) **Pipeline de Filtragem e Sanitização Pós-Processamento** (`sanitizeAndFilterAIResponse` e `filterAndSanitize`) que elimina preâmbulos robóticos, vazamentos de meta-instruções, encerramentos vazios e normaliza a pontuação. Em conformidade com o Decreto SAC nº 11.034/2022 e CDC Art. 49. |
+| **1. Frontend Funcional** | Campo de texto para a pergunta, botão de envio via JavaScript e espaço reservado (`<div>`/`<ul>`) para injeção da resposta da IA. | Componente `AIAssistantModal.tsx` com novo mascote oficial exclusivo Mangazon (`/mascot.jpg`) e design clean estilo Amazon: `<input id="ai-question-input">`, `<button id="ai-submit-button">` capturando evento de formulário, parser inteligente de Markdown (sem asteriscos literais) e `<div id="ai-response-container">` com renderização dinâmica. Acesso direto pelo botão flutuante com o avatar do mascote (`#floating-ai-assistant-btn`). |
+| **2. Servidor Seguro & IA Dinâmica** | Backend configurado (Node.js/Spring) para intermediar chamadas à IA de forma segura sem expor credenciais. | Rota `POST /api/ai/ask` configurada com o SDK oficial `@google/genai` utilizando arquitetura **Deduplicada e Unificada de Prompts** (`aiPromptConfig.ts` no frontend e `prompts/mangazon-system-instruction.txt` no backend Java). Utiliza o recurso nativo **`systemInstruction`** (`config.systemInstruction`), amostragem controlada (`temperature: 0.3`, `maxOutputTokens: 1000`) e **Engenharia de Prompt Avançada com Limites Estritos**: (1) **Limite de Escopo e Proteção Off-Topic** (recusa educada de temas alheios a mangás e loja), (2) **Blindagem Anti-Jailbreak** (proteção de diretrizes internas), (3) **Anti-Alucinação** (precisão com editoras e lançamentos nacionais), (4) **Direito do Consumidor e SAC** (Art. 49 e Decreto nº 11.034/2022) e (5) **Pipeline de Filtragem e Sanitização Pós-Processamento** (`sanitizeAndFilterAIResponse` e `filterAndSanitize`) que elimina preâmbulos robóticos, vazamentos de meta-instruções, encerramentos vazios e normaliza a pontuação. |
 | **3. Variáveis de Ambiente** | Arquivo `.env` na raiz do projeto e biblioteca `dotenv` instalada para guardar e carregar tokens. | Arquivo único canônico [`.env`](.env) na raiz com `GEMINI_API_KEY`, carregado via biblioteca `dotenv` no backend Node.js e gerenciado via propriedades de ambiente no Spring Boot. |
 | **4. Controle Seguro** | Arquivo `.gitignore` configurado desde o início com a linha `.env`. | [`.gitignore`](.gitignore) único e centralizado na raiz protegendo `.env*`, builds (`target/`, `dist/`) e dependências contra vazamentos no repositório. |
 
