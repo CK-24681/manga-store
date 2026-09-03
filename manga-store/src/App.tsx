@@ -8,6 +8,7 @@ import {
   CartDrawer,
   CheckoutModal,
   AIAssistantModal,
+  CustomerServiceFAQModal,
   Footer,
 } from './components';
 import { ReadingGuidePage, SellPage } from './pages';
@@ -46,6 +47,17 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+
+  // FAQ & SAC State (Conformidade CDC e Lei do SAC)
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
+  const [faqInitialTab, setFaqInitialTab] = useState<'faq' | 'human'>('faq');
+  const [faqInitialCategory, setFaqInitialCategory] = useState<string | undefined>(undefined);
+
+  const handleOpenFAQ = (tab: 'faq' | 'human' = 'faq', category?: string) => {
+    setFaqInitialTab(tab);
+    setFaqInitialCategory(category);
+    setIsFAQOpen(true);
+  };
 
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -194,6 +206,7 @@ export default function App() {
           setTimeout(() => window.scrollTo({ top: 400, behavior: 'smooth' }), 100);
         }}
         onResetHome={() => handleNavigate('home')}
+        onOpenFAQ={handleOpenFAQ}
       />
 
       {/* Main Content Area */}
@@ -326,6 +339,15 @@ export default function App() {
       <AIAssistantModal
         isOpen={isAIOpen}
         onClose={() => setIsAIOpen(false)}
+        onOpenHumanSupport={() => handleOpenFAQ('human')}
+      />
+
+      {/* Customer Service FAQ & Human Support Modal (Conformidade CDC / Lei do SAC) */}
+      <CustomerServiceFAQModal
+        isOpen={isFAQOpen}
+        onClose={() => setIsFAQOpen(false)}
+        initialTab={faqInitialTab}
+        initialCategory={faqInitialCategory}
       />
 
       {/* Floating Toast Notification */}
@@ -360,7 +382,7 @@ export default function App() {
       )}
 
       {/* Amazon Footer */}
-      <Footer />
+      <Footer onOpenFAQ={handleOpenFAQ} />
     </div>
   );
 }

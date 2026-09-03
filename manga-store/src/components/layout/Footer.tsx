@@ -4,7 +4,11 @@ import { Globe, DollarSign } from 'lucide-react';
 import { Language } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
 
-export const Footer: React.FC = () => {
+export interface FooterProps {
+  onOpenFAQ?: (tab?: 'faq' | 'human', category?: string) => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenFAQ }) => {
   const { t, language, setLanguage } = useLanguage();
 
   const scrollToTop = () => {
@@ -17,6 +21,21 @@ export const Footer: React.FC = () => {
     { code: 'es', label: 'Español (ES)', flag: '🇪🇸' },
     { code: 'ja', label: '日本語 (JP)', flag: '🇯🇵' },
   ];
+
+  const handleLinkClick = (link: string, colIdx: number, linkIdx: number) => {
+    if (!onOpenFAQ) return;
+
+    // Coluna 4 é a coluna de suporte/ajuda ("Deixe-nos Ajudar Você")
+    if (colIdx === 3) {
+      if (linkIdx === 1) {
+        onOpenFAQ('faq', 'entrega'); // Fretes & Prazos
+      } else if (linkIdx === 2) {
+        onOpenFAQ('faq', 'arrependimento'); // Devoluções & Trocas
+      } else {
+        onOpenFAQ('human'); // SAC e Atendimento Humano
+      }
+    }
+  };
 
   const footerCols = [
     { title: t.col1Title, links: [t.col1L1, t.col1L2, t.col1L3, t.col1L4] },
@@ -41,10 +60,19 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-left border-b border-gray-700">
         {footerCols.map((col, idx) => (
           <div key={idx}>
-            <h4 className="font-bold text-white text-sm mb-3">{col.title}</h4>
+            <h4
+              onClick={() => idx === 3 && onOpenFAQ && onOpenFAQ('human')}
+              className={`font-bold text-white text-sm mb-3 ${idx === 3 ? 'cursor-pointer hover:text-[#FF9900] transition-colors' : ''}`}
+            >
+              {col.title}
+            </h4>
             <ul className="space-y-2 text-gray-300 text-xs">
               {col.links.map((link, li) => (
-                <li key={li} className="hover:underline cursor-pointer hover:text-white transition-colors">
+                <li
+                  key={li}
+                  onClick={() => handleLinkClick(link, idx, li)}
+                  className="hover:underline cursor-pointer hover:text-white transition-colors"
+                >
                   {link}
                 </li>
               ))}

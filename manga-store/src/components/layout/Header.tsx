@@ -9,6 +9,7 @@ import {
   Flame,
   Globe,
   Check,
+  ShieldCheck,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Language, MangaCategory, CATEGORIES_LIST } from '../../types';
@@ -26,6 +27,7 @@ interface HeaderProps {
   onResetHome: () => void;
   onNavigate: (view: 'home' | 'releases' | 'deals' | 'sell' | 'reading-guide') => void;
   currentView: 'home' | 'releases' | 'deals' | 'sell' | 'reading-guide';
+  onOpenFAQ?: (tab?: 'faq' | 'human', category?: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onResetHome,
   onNavigate,
   currentView,
+  onOpenFAQ,
 }) => {
   const { language, setLanguage, t, translateCategory } = useLanguage();
   const [searchCat, setSearchCat] = useState<string>('All');
@@ -342,6 +345,18 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Venda na Mangazon
         </button>
+
+        {onOpenFAQ && (
+          <button
+            id="subnav-faq-sac-btn"
+            onClick={() => onOpenFAQ('faq')}
+            className="flex items-center gap-1 px-2.5 py-1 rounded hover:ring-1 hover:ring-white text-gray-200 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+            title="Dúvidas Frequentes, CDC e Atendimento Humano"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Ajuda & SAC (CDC)</span>
+          </button>
+        )}
         </div>
       </nav>
     </header>

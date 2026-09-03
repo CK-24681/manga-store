@@ -77,6 +77,20 @@ function generateLocalMangaAIResponse(prompt: string): string {
       '• **Continuação após o Anime (2011):** O anime finaliza no capítulo 339 (Volume 32). Para continuar a história na Expedição do Continente Sombrio e Guerra de Sucessão, comece do **Volume 33** em diante!';
   }
 
+  if (p.includes('humano') || p.includes('atendente') || p.includes('sac') || p.includes('procon') || p.includes('reclama')) {
+    return '🤝 **Atendimento Humano (SAC Mangazon)**:\n\n' +
+      'Em conformidade com o **Decreto Federal nº 11.034/2022 (Regulamentação do SAC)** e o Código de Defesa do Consumidor, você tem o direito garantido de ser atendido por um operador humano a qualquer momento.\n\n' +
+      '• **Como acionar agora:** Você pode clicar no botão **"Atendimento Humano (SAC)"** no topo desta janela para abrir a central com **Número de Protocolo oficial** gerado na hora!\n' +
+      '• **Canais Disponíveis:** Chat ao Vivo com operador humano e WhatsApp oficial do SAC (Seg. a Sáb. das 08h às 20h).';
+  }
+
+  if (p.includes('devol') || p.includes('arrepend') || p.includes('troca') || p.includes('defeito') || p.includes('avaria')) {
+    return '📦 **Trocas e Devoluções (Código de Defesa do Consumidor)**:\n\n' +
+      '• **Direito de Arrependimento (Art. 49 do CDC):** Em compras online, você tem até **7 dias corridos** após o recebimento para devolver o produto gratuitamente com reembolso 100% integral (produto e frete original).\n' +
+      '• **Troca por Defeito Gráfico ou Avaria (Art. 18 do CDC):** Se o mangá apresentar qualquer amassado ou falha de encadernação, realizamos a troca imediata sem qualquer custo.\n' +
+      '• **Como solicitar:** Abra a aba **"Ajuda & SAC (CDC)"** no topo do site ou acione o Atendimento Humano para gerar a etiqueta de postagem reversa gratuita dos Correios!';
+  }
+
   if (p.includes('recomen') || p.includes('indica') || p.includes('parecido') || p.includes('melhor')) {
     if (p.includes('seinen') || p.includes('sombrio') || p.includes('adulto')) {
       return '💀 **Recomendações Seinen & Dark Fantasy:**\n\n' +
@@ -94,7 +108,8 @@ function generateLocalMangaAIResponse(prompt: string): string {
 
   return 'Olá! Sou o consultor de atendimento da **Mangazon Store**, especializado em mangás nacionais e importados.\n\n' +
     '• **Como posso te ajudar:** Informações sobre volumes específicos, previsão de novos lançamentos (Panini, JBC, NewPOP), ordem canônica de leitura e onde o anime para no mangá.\n' +
-    '• **Dica de Compra na Mangazon:** Você pode escolher qualquer volume diretamente pelo **Seletor de Volumes** no card do produto e clicar em **"Espiar por Dentro"** para ver páginas de demonstração antes de adicionar ao carrinho!\n\n' +
+    '• **Dica de Compra na Mangazon:** Você pode escolher qualquer volume diretamente pelo **Seletor de Volumes** no card do produto e clicar em **"Espiar por Dentro"** para ver páginas de demonstração antes de adicionar ao carrinho!\n' +
+    '• **Atendimento ao Consumidor (SAC):** Para devoluções pelo Art. 49 do CDC, trocas ou falar com um operador humano, clique em **"Atendimento Humano (SAC)"** no topo deste modal.\n\n' +
     'Se desejar saber sobre alguma série em específico (como *Frieren*, *One Piece*, *Berserk*, *Jujutsu Kaisen* ou lançamentos recentes), basta me dizer o título!';
 }
 
@@ -142,6 +157,10 @@ QUEM VOCÊ É E ONDE VOCÊ TRABALHA:
 - NUNCA repita a pergunta do usuário como introdução (ex: JAMAIS diga "Sobre sua dúvida sobre..." ou "Você perguntou sobre..."). Vá direto à resposta útil!
 - NUNCA diga que é uma IA ou modelo de linguagem. Você é o assistente oficial da loja Mangazon.
 
+LEI DO CONSUMIDOR E ATENDIMENTO HUMANO (Decreto SAC nº 11.034/2022 e CDC):
+- Se o cliente perguntar sobre falar com um atendente humano, fazer reclamação, solicitar cancelamento, devolução ou estorno por arrependimento (Art. 49 do CDC), informe com gentileza e respeito que a Mangazon garante o direito imediato de transferência para operador humano com Número de Protocolo oficial gerado na hora, orientando o cliente a clicar no botão "Atendimento Humano (SAC)" disponível no topo da janela ou na aba "Ajuda & SAC (CDC)" no topo do site.
+- Lembre que devoluções por arrependimento são gratuitas em até 7 dias corridos após o recebimento, com frete de logística reversa pago pela loja e reembolso integral.
+
 RECURSOS E CATÁLOGO DA MANGAZON STORE:
 - Obras disponíveis em nosso catálogo:
   • Frieren (Sousou no Frieren / Frieren e a Jornada para o Além): Sucesso absoluto publicado pela Panini no Brasil. Temos volumes do 1 ao 12 em estoque, e o Volume 13 tem previsão de lançamento oficial no Brasil nos próximos meses (publicação regular bimestral/trimestral da Panini). Oferecemos também edições especiais com brindes e marcadores. Se a pessoa veio do anime (28 episódios), a história continua no mangá a partir do Volume 7 (Capítulo 61).
@@ -161,7 +180,7 @@ Pergunta do cliente: ${userPrompt}`,
           });
 
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout ao conectar com o serviço de nuvem')), 25000)
+            setTimeout(() => reject(new Error('Timeout ao conectar com o serviço de nuvem')), 12000)
           );
 
           const response: any = await Promise.race([callPromise, timeoutPromise]);

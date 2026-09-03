@@ -20,3 +20,4 @@ export * from './modals/ProductDetailModal';
 export * from './modals/LookInsideModal';
 export * from './modals/CheckoutModal';
 export * from './modals/AIAssistantModal';
+export * from './modals/CustomerServiceFAQModal';

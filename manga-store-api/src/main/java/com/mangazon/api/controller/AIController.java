@@ -52,6 +52,20 @@ public class AIController {
     private String generateResponse(String prompt) {
         String p = prompt.toLowerCase();
 
+        if (p.contains("humano") || p.contains("atendente") || p.contains("sac") || p.contains("procon") || p.contains("reclama")) {
+            return "🤝 **Atendimento Humano (SAC Mangazon)**:\n\n" +
+                   "Em conformidade com o **Decreto Federal nº 11.034/2022 (Regulamentação do SAC)** e o Código de Defesa do Consumidor, você tem o direito garantido de ser atendido por um operador humano a qualquer momento.\n\n" +
+                   "• **Como acionar:** Acesse a aba **\"Ajuda & SAC (CDC)\"** no menu da loja ou acione o botão de Atendimento Humano para receber seu **Número de Protocolo oficial** gerado na hora!\n" +
+                   "• **Canais:** Chat ao Vivo e WhatsApp do SAC (Segunda a Sábado, das 08h às 20h).";
+        }
+
+        if (p.contains("devol") || p.contains("arrepend") || p.contains("troca") || p.contains("defeito")) {
+            return "📦 **Trocas e Devoluções (Código de Defesa do Consumidor)**:\n\n" +
+                   "• **Direito de Arrependimento (Art. 49 do CDC):** Prazo legal de **7 dias corridos** após o recebimento para solicitar devolução com reembolso 100% integral (produto e frete).\n" +
+                   "• **Garantia contra Vício/Defeito (Art. 18 do CDC):** Troca imediata sem qualquer custo para o consumidor em casos de páginas danificadas ou avaria no transporte.\n" +
+                   "• **Como solicitar:** Pela Central de Ajuda & FAQ na loja ou diretamente com nosso SAC humano para emissão do código de postagem reversa dos Correios.";
+        }
+
         if (p.contains("frieren") || p.contains("sousou") || p.contains("himmel") || p.contains("fern")) {
             return "🌿 **Frieren e a Jornada para o Além (Sousou no Frieren)**:\n\n" +
                    "• **Previsão de Lançamentos:** No Brasil, a publicação oficial é da Panini. Os **Volumes 1 ao 12** estão disponíveis em nosso acervo, e o **Volume 13** tem previsão oficial para os próximos meses de 2025/2026, seguindo a periodicidade bimestral/trimestral da editora.\n" +

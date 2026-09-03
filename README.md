@@ -131,7 +131,19 @@ O projeto cumpre integralmente os 4 pilares exigidos na disciplina de Inteligên
 ### 4. Carrinho e Checkout Completo
 - Gaveta lateral com cálculo dinâmico de frete grátis, cupons (`MANGA20`, `OTAKU10`), comprovante de pedido e código de rastreio simulado.
 
-### 5. Internacionalização (i18n)
+### 5. Central de Ajuda, FAQ e Atendimento Humano (Conformidade com o CDC e Decreto do SAC)
+- **Base Legal Sólida:** Totalmente alinhado ao Código de Defesa do Consumidor (Lei nº 8.078/1990), Lei do E-commerce (Decreto nº 7.962/2013) e nova Lei do SAC (Decreto Federal nº 11.034/2022).
+- **FAQ Categorizado:** Esclarece direitos essenciais de forma transparente:
+  - **Direito de Arrependimento (Art. 49 do CDC):** Devolução em até 7 dias corridos após o recebimento, com frete de logística reversa gratuito pelos Correios e estorno 100% integral (Pix imediato ou fatura do cartão).
+  - **Garantia contra Avarias ou Vícios Gráficos (Art. 18 do CDC):** Troca ou estorno imediato sem ônus para o consumidor em casos de folhas soltas, defeitos de impressão ou avarias no transporte.
+  - **Prazos e Rastreamento:** Informações sobre Frete Express, envios para todo o Brasil e rastreamento ponto a ponto.
+  - **Dados Legais da Empresa:** Razão social, CNPJ simulado, endereço fiscal e canais oficiais visíveis.
+- **Redirecionamento Obrigatório para Atendimento Humano:**
+  - Em estrito cumprimento ao **Artigo 12 do Decreto nº 11.034/2022**, o consumidor conta com a opção permanente de transferência imediata para um operador humano tanto no cabeçalho e nas respostas do assistente de IA (`AIAssistantModal`) quanto na Central de Ajuda da loja (`CustomerServiceFAQModal`).
+  - **Geração Automática de Protocolo Oficial:** Todo contato com o SAC gera um código único e auditável (`SAC-MNG-2026-XXXXX`).
+  - **Canais Multicanais Integrados:** Simulador de chat ao vivo com atendente humano e botão direto para o WhatsApp oficial do SAC.
+
+### 6. Internacionalização (i18n)
 - 4 idiomas suportados em tempo real sem recarregar a página: **Português (PT)**, **Inglês (EN)**, **Espanhol (ES)** e **Japonês (JA)**.
 
 ---

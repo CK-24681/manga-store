@@ -1,6 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, X, RotateCcw, Loader2, Copy, Check, MessageSquare } from 'lucide-react';
+import {
+  Sparkles,
+  X,
+  Send,
+  Loader2,
+  Copy,
+  Check,
+  RotateCcw,
+  MessageSquare,
+  Headphones,
+  ShieldCheck,
+} from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
+
+interface AIAssistantModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenHumanSupport?: () => void;
+}
 
 interface AIMessage {
   id: string;
@@ -9,17 +26,12 @@ interface AIMessage {
   timestamp: string;
 }
 
-interface AIAssistantModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
 const QUICK_SUGGESTIONS = [
   'Qual volume Luffy usa Gear 5?',
   'Mangás sombrios parecidos com Berserk',
+  'Falar com Atendente Humano (SAC)',
+  'Como devolver por arrependimento (Art. 49)?',
   'Ordem de leitura de Jujutsu Kaisen',
-  'Onde o anime de Hunter x Hunter para no mangá?',
-  'Quais são os mangás mais vendidos?',
 ];
 
 function renderFormattedMessage(text: string) {
@@ -62,7 +74,11 @@ function renderFormattedMessage(text: string) {
   });
 }
 
-export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) => {
+export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
+  isOpen,
+  onClose,
+  onOpenHumanSupport,
+}) => {
   const { language } = useLanguage();
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +110,29 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
   const handleAskAI = async (promptToSend?: string) => {
     const query = (promptToSend || question).trim();
     if (!query || isLoading) return;
+
+    // Se o usuário pedir explicitamente para falar com humano
+    if (
+      query.toLowerCase().includes('falar com atendente') ||
+      query.toLowerCase().includes('atendimento humano') ||
+      query.toLowerCase().includes('humano')
+    ) {
+      const userMessage: AIMessage = {
+        id: `user-${Date.now()}`,
+        sender: 'user',
+        text: query,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      const aiMessage: AIMessage = {
+        id: `ai-${Date.now()}`,
+        sender: 'ai',
+        text: 'Em conformidade com o **Decreto Federal nº 11.034/2022 (Regulamentação do SAC)** e o Código de Defesa do Consumidor, você tem o direito garantido de ser transferido para um atendente humano a qualquer momento.\n\nClique no botão abaixo para abrir a nossa Central de Atendimento Humano, onde você receberá um **Número de Protocolo oficial** e poderá conversar com nossa equipe por chat ao vivo ou WhatsApp!',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, userMessage, aiMessage]);
+      setQuestion('');
+      return;
+    }
 
     const userMessage: AIMessage = {
       id: `user-${Date.now()}`,
@@ -189,7 +228,22 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            {onOpenHumanSupport && (
+              <button
+                id="header-open-human-support-btn"
+                onClick={() => {
+                  onClose();
+                  onOpenHumanSupport();
+                }}
+                className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer hover:text-white"
+                title="Transferir para atendimento humano (Decreto SAC nº 11.034/2022)"
+              >
+                <Headphones className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Atendimento Humano (SAC)</span>
+                <span className="sm:hidden">SAC</span>
+              </button>
+            )}
             <button
               onClick={handleClearHistory}
               title="Limpar conversa"
@@ -238,6 +292,33 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
                   <div className="break-words font-sans">
                     {renderFormattedMessage(msg.text)}
                   </div>
+
+                  {/* Card Interativo de Transferência Humana */}
+                  {msg.sender === 'ai' &&
+                    onOpenHumanSupport &&
+                    (msg.text.toLowerCase().includes('humano') ||
+                      msg.text.toLowerCase().includes('atendente') ||
+                      msg.text.toLowerCase().includes('sac') ||
+                      msg.text.toLowerCase().includes('devolu') ||
+                      msg.text.toLowerCase().includes('arrependimento') ||
+                      msg.text.toLowerCase().includes('troca')) && (
+                      <div className="mt-3 pt-2.5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="text-gray-500 text-[11px]">
+                          Direito do Consumidor (Dec. nº 11.034/2022):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onOpenHumanSupport();
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 shadow-2xs whitespace-nowrap active:scale-95"
+                        >
+                          <Headphones className="w-3.5 h-3.5" />
+                          <span>Falar com Atendente Humano</span>
+                        </button>
+                      </div>
+                    )}
 
                   <div
                     className={`flex items-center justify-between gap-3 mt-2.5 pt-1.5 border-t text-[10px] ${
