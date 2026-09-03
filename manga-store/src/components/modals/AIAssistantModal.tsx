@@ -22,6 +22,27 @@ const QUICK_SUGGESTIONS = [
   'Quais são os mangás mais vendidos?',
 ];
 
+function renderFormattedMessage(text: string) {
+  const paragraphs = text.split('\n');
+  return paragraphs.map((paragraph, pIdx) => {
+    const parts = paragraph.split(/(\*\*.*?\*\*)/g);
+    return (
+      <p key={pIdx} className={pIdx > 0 ? 'mt-1.5' : ''}>
+        {parts.map((part, partIdx) => {
+          if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+            return (
+              <strong key={partIdx} className="font-bold text-gray-950">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return <React.Fragment key={partIdx}>{part}</React.Fragment>;
+        })}
+      </p>
+    );
+  });
+}
+
 export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onClose }) => {
   const { language } = useLanguage();
   const [question, setQuestion] = useState('');
@@ -31,7 +52,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Olá! Sou o assistente virtual da **Mangazon**. Posso te ajudar com recomendações de mangás, cronologia de arcos, faixas de capítulos e volumes para sua coleção. Como posso te ajudar hoje?',
+      text: 'Olá! Sou o assistente virtual da Mangazon. Posso te ajudar com recomendações de mangás, cronologia de arcos, faixas de capítulos e volumes para sua coleção. Como posso te ajudar hoje?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -131,22 +152,18 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 font-sans animate-fade-in"
     >
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200 overflow-hidden h-[85vh] max-h-[680px]">
-        {/* Cabeçalho Clean & Robusto */}
-        <div className="bg-[#131921] text-white px-5 sm:px-6 py-4 flex items-center justify-between border-b border-gray-800 select-none">
+        {/* Cabeçalho Clean & Robusto com Mascote */}
+        <div className="bg-[#131921] text-white px-5 sm:px-6 py-3.5 flex items-center justify-between border-b border-gray-800 select-none">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#232F3E] text-[#FF9900] border border-gray-700 flex items-center justify-center shadow-xs">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <img
+              src="/mascot.jpg"
+              alt="Mascote Mangazon"
+              className="w-10 h-10 rounded-full object-cover border-2 border-[#FF9900]/70 shadow-sm ring-1 ring-white/15"
+            />
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm sm:text-base text-white">
-                  Assistente Mangazon
-                </h3>
-                <span className="flex items-center gap-1 text-[10px] font-medium bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  Ativo
-                </span>
-              </div>
+              <h3 className="font-bold text-sm sm:text-base text-white">
+                Assistente Mangazon
+              </h3>
               <p className="text-[11px] text-gray-400 mt-0.5">
                 Recomendações de mangás, volumes e capítulos
               </p>
@@ -185,9 +202,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
                 }`}
               >
                 {msg.sender === 'ai' && (
-                  <div className="w-7 h-7 rounded-lg bg-[#232F3E] text-[#FF9900] flex items-center justify-center flex-shrink-0 mt-0.5 border border-gray-700">
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </div>
+                  <img
+                    src="/mascot.jpg"
+                    alt="Mascote Mangazon"
+                    className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5 border border-[#FF9900]/50 shadow-2xs"
+                  />
                 )}
 
                 <div
@@ -197,8 +216,8 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
                       : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
                   }`}
                 >
-                  <div className="whitespace-pre-line break-words font-sans">
-                    {msg.text}
+                  <div className="break-words font-sans">
+                    {renderFormattedMessage(msg.text)}
                   </div>
 
                   <div
@@ -230,9 +249,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ isOpen, onCl
 
             {isLoading && (
               <li className="flex gap-2.5 text-xs sm:text-sm justify-start animate-fade-in">
-                <div className="w-7 h-7 rounded-lg bg-[#232F3E] text-[#FF9900] flex items-center justify-center flex-shrink-0 border border-gray-700">
-                  <Sparkles className="w-3.5 h-3.5" />
-                </div>
+                <img
+                  src="/mascot.jpg"
+                  alt="Mascote Mangazon"
+                  className="w-7 h-7 rounded-full object-cover flex-shrink-0 animate-pulse border border-[#FF9900]/50 shadow-2xs"
+                />
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-none p-3.5 shadow-xs flex items-center gap-2.5 text-gray-600 text-xs">
                   <Loader2 className="w-4 h-4 animate-spin text-[#FF9900]" />
                   <span>Consultando acervo e preparando resposta...</span>

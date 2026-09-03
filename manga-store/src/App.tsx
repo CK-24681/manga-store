@@ -298,22 +298,20 @@ export default function App() {
       />
 
 
-      {/* Botão Flutuante do Assistente (Design Clean & Robusto) */}
+      {/* Botão Flutuante do Assistente (Mascote Oficial Mangazon) */}
       <div className="fixed bottom-6 right-6 z-40">
         <button
           id="floating-ai-assistant-btn"
           onClick={() => setIsAIOpen(true)}
-          className="relative w-14 h-14 rounded-full bg-[#131921] hover:bg-[#232F3E] text-[#FF9900] border border-gray-700 hover:border-[#FF9900] shadow-xl hover:shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-[#FF9900]/40"
+          className="relative w-14 h-14 rounded-full bg-[#131921] hover:bg-[#232F3E] border-2 border-[#FF9900] shadow-xl hover:shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-[#FF9900]/40 overflow-hidden p-0.5"
           title="Fale com o Assistente Mangazon"
           aria-label="Abrir Assistente Mangazon"
         >
-          {/* Ícone com toque minimalista */}
-          <div className="relative flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-[#FF9900] group-hover:rotate-12 transition-transform duration-300" />
-          </div>
-
-          {/* Indicador de Status Discreto */}
-          <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#131921]" />
+          <img
+            src="/mascot.jpg"
+            alt="Mascote Mangazon"
+            className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
 
           {/* Tooltip Clean no Desktop */}
           <div className="hidden lg:block absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
