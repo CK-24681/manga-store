@@ -27,11 +27,10 @@ interface AIMessage {
 }
 
 const QUICK_SUGGESTIONS = [
-  'Qual volume Luffy usa Gear 5?',
-  'Mangás sombrios parecidos com Berserk',
   'Falar com Atendente Humano (SAC)',
   'Como devolver por arrependimento (Art. 49)?',
-  'Ordem de leitura de Jujutsu Kaisen',
+  'Prazos de entrega e frete grátis',
+  'Garantia contra avarias e trocas',
 ];
 
 function renderFormattedMessage(text: string) {
@@ -87,7 +86,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Olá! Sou o assistente virtual da Mangazon. Posso te ajudar com recomendações de mangás, cronologia de arcos, faixas de capítulos e volumes para sua coleção. Como posso te ajudar hoje?',
+      text: 'Olá! Sou o assistente de atendimento da Mangazon Store. Como posso te ajudar hoje?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -223,7 +222,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
                 Assistente Mangazon
               </h3>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                Recomendações de mangás, volumes e capítulos
+                Atendimento ao cliente e suporte oficial
               </p>
             </div>
           </div>
@@ -365,11 +364,11 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Sugestões Rápidas de Perguntas (Pills limpos) */}
+        {/* Tópicos Rápidos de Atendimento (Pills limpos) */}
         <div className="px-4 sm:px-5 py-2.5 bg-white border-t border-gray-100 flex items-center gap-1.5 overflow-x-auto text-[11px] scrollbar-none">
           <span className="text-gray-400 font-medium flex-shrink-0 flex items-center gap-1 mr-1">
             <MessageSquare className="w-3 h-3 text-gray-400" />
-            Sugestões:
+            Ajuda rápida:
           </span>
           {QUICK_SUGGESTIONS.map((sug, i) => (
             <button
@@ -399,7 +398,7 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({
             id="ai-question-input"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Pergunte sobre mangás, volumes, arcos ou recomendações..."
+            placeholder="Digite sua dúvida ou solicitação..."
             disabled={isLoading}
             className="flex-1 bg-gray-50 border border-gray-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF9900] focus:border-transparent focus:bg-white transition-all"
           />
