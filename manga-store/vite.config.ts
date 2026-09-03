@@ -13,7 +13,14 @@ export default defineConfig(() => {
     },
     server: {
       proxy: {
-        '/api': 'http://localhost:8080'
+        '/api': {
+          target: 'http://localhost:8080',
+          bypass: (req) => {
+            if (req.url && req.url.startsWith('/api/ai')) {
+              return req.url; // Express handles this route directly
+            }
+          },
+        },
       },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modifyâfile watching is disabled to prevent flickering during agent edits.

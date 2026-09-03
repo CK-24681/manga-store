@@ -19,15 +19,15 @@ import {
   Award,
   Film
 } from 'lucide-react';
-import { MangaFormat, MangaItem, ReviewItem } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { MangaFormat, MangaItem, ReviewItem } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ProductDetailModalProps {
   manga: MangaItem | null;
   allManga: MangaItem[];
   onClose: () => void;
-  onAddToCart: (manga: MangaItem, format: MangaFormat, qty?: number) => void;
-  onBuyNow: (manga: MangaItem, format: MangaFormat) => void;
+  onAddToCart: (manga: MangaItem, format: MangaFormat, qty?: number, volumeNumber?: number) => void;
+  onBuyNow: (manga: MangaItem, format: MangaFormat, volumeNumber?: number) => void;
   onOpenLookInside: (manga: MangaItem) => void;
   onSelectRelatedManga: (manga: MangaItem) => void;
 }
@@ -44,7 +44,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const { t, formatPrice, translateFormat, translateCategory, language } = useLanguage();
   if (!manga) return null;
 
+  const totalVolumes = Math.max(1, manga.volumesCount || manga.currentVolume || 1);
   const [selectedFormat, setSelectedFormat] = useState<MangaFormat>(manga.formats[0].format);
+  const [selectedVolume, setSelectedVolume] = useState<number>(1);
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -69,15 +71,15 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const bundleRawTotal = activeFormat.price + relatedItems.reduce((acc, item) => acc + item.formats[0].price, 0);
 
   const handleAddToCart = () => {
-    onAddToCart(manga, selectedFormat, quantity);
+    onAddToCart(manga, selectedFormat, quantity, selectedVolume);
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
   const handleAddBundleToCart = () => {
-    onAddToCart(manga, selectedFormat, 1);
+    onAddToCart(manga, selectedFormat, 1, selectedVolume);
     relatedItems.forEach((rel) => {
-      onAddToCart(rel, rel.formats[0].format, 1);
+      onAddToCart(rel, rel.formats[0].format, 1, 1);
     });
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
@@ -150,6 +152,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   src={galleryImages[selectedImgIdx] || manga.coverImage}
                   alt={manga.title}
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80';
+                  }}
                   className="h-full w-auto object-cover rounded shadow"
                 />
 
@@ -238,7 +243,81 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="border-t border-b border-gray-200 py-3 space-y-2">
+              {/* Volume & Chapter Selection */}
+              <div className="border-t border-b border-gray-200 py-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-[#FF9900]" />
+                    <span>Selecione o Volume ({totalVolumes} volumes disponíveis)</span>
+                  </span>
+                  <span className="text-xs font-black text-[#B12704] bg-amber-100/60 px-2.5 py-0.5 rounded border border-amber-300">
+                    Volume {selectedVolume} selecionado
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVolume(1)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedVolume === 1
+                        ? 'bg-[#FF9900] text-black shadow-sm ring-2 ring-[#FF9900]/30'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Vol. 1 (Início da Série)
+                  </button>
+
+                  {totalVolumes > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVolume(totalVolumes)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        selectedVolume === totalVolumes
+                          ? 'bg-[#FF9900] text-black shadow-sm ring-2 ring-[#FF9900]/30'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Vol. {totalVolumes} (Mais Recente)
+                    </button>
+                  )}
+
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <label htmlFor="modal-vol-select" className="text-xs font-medium text-gray-600">
+                      Escolher volume:
+                    </label>
+                    <select
+                      id="modal-vol-select"
+                      value={selectedVolume}
+                      onChange={(e) => setSelectedVolume(Number(e.target.value))}
+                      className="border border-gray-300 rounded bg-white px-2.5 py-1.5 text-xs text-gray-900 font-bold focus:ring-2 focus:ring-[#FF9900] focus:outline-none cursor-pointer"
+                    >
+                      {Array.from({ length: totalVolumes }).map((_, idx) => {
+                        const v = idx + 1;
+                        const startCap = (v - 1) * 9 + 1;
+                        const endCap = v * 9;
+                        return (
+                          <option key={v} value={v}>
+                            Volume {v} (Capítulos {startCap}–{endCap})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Chapter & Arc context banner */}
+                <div className="bg-amber-50/60 p-2.5 rounded-lg border border-amber-200/60 text-xs text-amber-900 flex items-center justify-between">
+                  <span>
+                    Comprando: <strong>{manga.title} — Vol. {selectedVolume}</strong>
+                  </span>
+                  <span className="text-gray-600 font-medium">
+                    Capítulos inclusos: <strong>{(selectedVolume - 1) * 9 + 1} a {selectedVolume * 9}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-b border-gray-200 pb-3 space-y-2">
                 <span className="text-xs font-bold text-gray-700 uppercase tracking-wider block">
                   {t.formatSelectTitle}
                 </span>
@@ -298,10 +377,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   )}
                 </div>
 
-                {/* Delivery & Prime */}
+                {/* Delivery */}
                 <div className="text-xs space-y-1">
                   <div className="flex items-center gap-1.5 text-[#007185] font-semibold">
-                    <span className="italic font-black text-[#00A8E1]">✓prime</span>
+                    <span className="font-bold text-teal-700">Frete Grátis</span>
                     <span>{t.freeDeliveryTomorrow}</span>
                   </div>
                   <div className="text-gray-600">
@@ -331,6 +410,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </select>
                 </div>
 
+                {/* Active Selection Summary */}
+                <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-xs space-y-1">
+                  <div className="font-bold text-gray-900">
+                    {manga.title} — Volume {selectedVolume}
+                  </div>
+                  <div className="text-gray-600 text-[11px]">
+                    Formato: <strong className="text-gray-800">{translateFormat(selectedFormat)}</strong> · Capítulos {(selectedVolume - 1) * 9 + 1} a {selectedVolume * 9}
+                  </div>
+                </div>
+
                 {/* Action Buttons */}
                 <div className="space-y-2 pt-1">
                   <button
@@ -351,18 +440,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     ) : (
                       <>
                         <ShoppingCart className="w-4 h-4" />
-                        <span>{t.addToCart}</span>
+                        <span>Adicionar Vol. {selectedVolume} ao Carrinho</span>
                       </>
                     )}
                   </button>
 
                   <button
                     id="modal-buy-now-btn"
-                    onClick={() => onBuyNow(manga, selectedFormat)}
+                    onClick={() => onBuyNow(manga, selectedFormat, selectedVolume)}
                     className="w-full bg-[#FFA41C] hover:bg-[#FA8900] text-gray-900 font-bold py-2.5 px-4 rounded-full text-xs shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Zap className="w-4 h-4 fill-current text-gray-900" />
-                    <span>{t.buyNow1Click}</span>
+                    <span>Comprar Vol. {selectedVolume} em 1-Clique</span>
                   </button>
                 </div>
 
@@ -525,35 +614,51 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-200 space-y-2 mb-6">
                   <h5 className="font-bold text-gray-900">{t.keyArcsMilestones}</h5>
                   <p className="text-gray-800 leading-relaxed">
-                    Volume {manga.currentVolume} of {manga.volumesCount} • Official Canon Storyline.
+                    Volume {manga.currentVolume} de {manga.volumesCount} • Edição Canônica Oficial.
                   </p>
                   <p className="text-xs text-gray-600 font-mono bg-white p-2 rounded border border-amber-200">
-                    {manga.title} is positioned at the pinnacle of {manga.category} serialization.
+                    {manga.title} — Publicação oficial na categoria {manga.category}.
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <h4 className="font-bold text-gray-900 text-base border-b border-gray-200 pb-2">Volumes Disponíveis ({manga.volumesCount})</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
-                    {Array.from({ length: manga.volumesCount || 1 }).map((_, idx) => (
-                      <div key={idx} className="flex flex-col items-center gap-2 group cursor-pointer">
-                        <div className="w-full aspect-[3/4] bg-gray-100 rounded border border-gray-200 shadow-sm overflow-hidden relative">
-                          <img 
-                            src={manga.coverImage} 
-                            alt={`Volume ${idx + 1}`} 
-                            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity">
-                            <span className="bg-white text-gray-900 text-[10px] font-bold px-2 py-1 rounded-full shadow">Ver Detalhes</span>
+                    {Array.from({ length: totalVolumes }).map((_, idx) => {
+                      const v = idx + 1;
+                      const isSel = selectedVolume === v;
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => {
+                            setSelectedVolume(v);
+                            setActiveTab('details');
+                          }}
+                          className={`flex flex-col items-center gap-2 group cursor-pointer p-2 rounded-xl transition-all ${
+                            isSel ? 'bg-amber-100/70 ring-2 ring-[#FF9900]' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="w-full aspect-[3/4] bg-gray-100 rounded border border-gray-200 shadow-sm overflow-hidden relative">
+                            <img 
+                              src={manga.coverImage} 
+                              alt={`Volume ${v}`} 
+                              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity">
+                              <span className="bg-[#FF9900] text-black text-[10px] font-bold px-2 py-1 rounded-full shadow">
+                                {isSel ? 'Selecionado' : 'Comprar Este'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-center w-full">
+                            <p className="font-bold text-gray-900 text-xs truncate w-full">{manga.title}</p>
+                            <p className="text-[#FF9900] font-black text-xs">Vol. {v}</p>
+                            <p className="text-gray-400 text-[10px]">Caps {(v - 1) * 9 + 1}–{v * 9}</p>
                           </div>
                         </div>
-                        <div className="text-center w-full">
-                          <p className="font-bold text-gray-900 text-xs truncate w-full">{manga.title}</p>
-                          <p className="text-[#FF9900] font-black text-xs">Vol. {idx + 1}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -565,23 +670,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <table className="w-full border-collapse border border-gray-200 text-left">
                   <tbody>
                     <tr className="border-b border-gray-200">
-                      <td className="p-2.5 font-bold bg-gray-50 w-1/3">Publisher</td>
+                      <td className="p-2.5 font-bold bg-gray-50 w-1/3">Editora</td>
                       <td className="p-2.5">{manga.publisher}</td>
                     </tr>
                     <tr className="border-b border-gray-200">
-                      <td className="p-2.5 font-bold bg-gray-50">Language</td>
-                      <td className="p-2.5">Official Licensed Edition (Multilingual Support)</td>
+                      <td className="p-2.5 font-bold bg-gray-50">Idioma</td>
+                      <td className="p-2.5">Português (Edição Oficial Licenciada)</td>
                     </tr>
                     <tr className="border-b border-gray-200">
-                      <td className="p-2.5 font-bold bg-gray-50">Dimensions</td>
-                      <td className="p-2.5">5.0 x 0.8 x 7.5 inches (Standard Tankobon) / 7.0 x 10.0 inches (Deluxe)</td>
+                      <td className="p-2.5 font-bold bg-gray-50">Dimensões</td>
+                      <td className="p-2.5">13,7 x 20,0 cm (Formato Padrão Tankobon) / 17,5 x 26,0 cm (Edição de Luxo)</td>
                     </tr>
                     <tr className="border-b border-gray-200">
                       <td className="p-2.5 font-bold bg-gray-50">ISBN-13</td>
                       <td className="p-2.5 font-mono">{manga.isbn}</td>
                     </tr>
                     <tr className="border-b border-gray-200">
-                      <td className="p-2.5 font-bold bg-gray-50">Tags & Themes</td>
+                      <td className="p-2.5 font-bold bg-gray-50">Gêneros & Temas</td>
                       <td className="p-2.5">{manga.tags.join(', ')}</td>
                     </tr>
                   </tbody>

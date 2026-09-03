@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, BookOpen, ShoppingCart, RotateCw } from 'lucide-react';
-import { MangaFormat, MangaItem } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { MangaFormat, MangaItem } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface LookInsideModalProps {
   manga: MangaItem | null;

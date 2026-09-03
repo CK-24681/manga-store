@@ -1,6 +1,6 @@
 # 🥭 Mangazon — Manga Store
 
-Loja de mangás estilo Amazon, construída como projeto acadêmico de **Inteligência Artificial / Engenharia de Software**.
+E-commerce de mangás de alta fidelidade visual inspirado na Amazon, construído com arquitetura monorepo moderna, integração com IA e backend robusto em **Java 21 + Spring Boot 3.3** e frontend em **React 19 + TypeScript + Tailwind CSS 4**.
 
 ---
 
@@ -8,47 +8,78 @@ Loja de mangás estilo Amazon, construída como projeto acadêmico de **Intelig�
 
 ```
 MangaStore/
-├── manga-store/          ← Frontend React + Vite + Express
-└── manga-store-api/      ← Backend Java 21 + Spring Boot 3.3
+├── manga-store/                  ← Frontend React 19 + Vite 6 + Express Server
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/           ← Header, Footer, Logo, HeroCarousel
+│   │   │   ├── catalog/          ← ProductCard, BestSellersRankGrid
+│   │   │   ├── cart/             ← CartDrawer
+│   │   │   ├── modals/           ← ProductDetailModal, LookInsideModal, CheckoutModal, AIAssistantModal
+│   │   │   └── index.ts          ← Barrel Export centralizado
+│   │   ├── pages/                ← Páginas completas (ReadingGuidePage, SellPage)
+│   │   ├── context/              ← Contextos React (LanguageContext)
+│   │   ├── i18n/                 ← Traduções e internacionalização (PT, EN, ES, JA)
+│   │   ├── types.ts              ← Tipagem TypeScript centralizada
+│   │   ├── App.tsx               ← Orquestrador de estado e navegação
+│   │   ├── main.tsx              ← Ponto de montagem React
+│   │   └── index.css             ← Estilos globais e tokens Tailwind
+│   ├── server.ts                 ← Servidor Node.js Express + Middleware Vite + Endpoint IA
+│   ├── vite.config.ts            ← Configuração Vite com proxy inteligente para o Spring Boot
+│   └── package.json
+│
+├── manga-store-api/              ← Backend Java 21 LTS + Spring Boot 3.3
+│   ├── src/main/java/com/mangazon/api/
+│   │   ├── controller/           ← MangaController, CartController, AIController
+│   │   ├── service/              ← MangaService, CartService
+│   │   ├── repository/           ← JsonFileRepository, OrderRepository, ReviewRepository
+│   │   ├── model/                ← Manga, MangaFormat, CartItem, Order, Review
+│   │   ├── data/                 ← MangaDexService (integração real com MangaDex API)
+│   │   ├── config/               ← CorsConfig (CORS seguro para frontend)
+│   │   └── MangaStoreApiApplication.java
+│   └── src/test/java/com/mangazon/api/
+│       ├── MangaStoreApiApplicationTests.java ← Teste de integridade do contexto
+│       └── AIControllerTest.java              ← Testes automatizados do endpoint de IA
+│
+├── requests/                     ← Coleções HTTP organizadas para testes
+│   ├── requests.http             ← Requisições prontas para VS Code REST Client / IntelliJ
+│   └── collection.yml            ← Coleção Bruno / Insomnia
+│
+├── .env                          ← Variáveis de ambiente protegidas (ignorado pelo git)
+├── .env.example                  ← Modelo seguro de variáveis de ambiente
+├── .gitignore                    ← Proteção de credenciais e arquivos de build
+└── README.md                     ← Documentação do projeto
 ```
 
 ---
 
-## 📦 manga-store (Frontend)
+## ⚡ Como Executar o Projeto
 
-### Stack
-| Tecnologia | Versão | Uso |
-|-----------|--------|-----|
-| React | 18 | UI declarativa |
-| Vite | 5 | Build/dev server |
-| TypeScript | 5 | Tipagem |
-| Tailwind CSS | 4 (via `@tailwindcss/vite`) | Estilização responsiva |
-| Express | 4 | API server + proxy Vite |
-| Lucide React | — | Ícones |
+### 1. Pré-requisitos
+- **Node.js** (v18+) e **npm**
+- **Java 21 JDK** (OpenJDK ou similar)
+- **Apache Maven** (3.9+)
 
-### Funcionalidades
-- 🎠 **Hero Carousel** — 3 slides com autoplay, navegação por setas e dots
-- 🛍️ **Product Grid** — Bento layout `1col → 2col → 3col` (mobile/tablet/desktop)
-- 📊 **Best Sellers Rank** — Top 10 com filtro por categoria e ordenação
-- 🔍 **Busca** — Busca em tempo real por título, autor, tags e sinopse
-- 🛒 **Cart Drawer** — Carrinho lateral com atualização de quantidade
-- 💳 **Checkout** — Modal completo com códigos promocionais e rastreio
-- 🌐 **i18n** — 4 idiomas: PT 🇧🇷 · EN 🇺🇸 · ES 🇪🇸 · JA 🇯🇵
-- 📖 **Look Inside** — Preview de páginas do mangá
-- ⭐ **Reviews** — Avaliações com rating, verificação de compra
+---
 
-### Responsividade
-| Breakpoint | Layout |
-|-----------|--------|
-| `< 640px` (mobile) | 1 coluna, busca colapsável, hamburger menu |
-| `640px-768px` (sm) | 2 colunas, busca expandida |
-| `768px-1024px` (md/lg) | 2–3 colunas, navegação completa |
-| `> 1024px` (desktop) | 3 colunas, sidebar visível |
+### 2. Executando o Backend (Java Spring Boot)
+O backend gerencia os dados dos mangás, persistência de pedidos/avaliações e consome a MangaDex API.
 
-### Categorias disponíveis
-`Shonen` · `Seinen` · `Dark Fantasy` · `Romance & Shojo` · `Sci-Fi & Cyberpunk` · `Isekai & Fantasy` · `Box Sets & Special Editions` · `Classic & Award Winners`
+```bash
+cd manga-store-api
 
-### Como rodar
+# Executar aplicação Spring Boot (Porta 8080)
+mvn spring-boot:run
+
+# Executar a suíte de testes automatizados
+mvn test
+```
+
+> **Endpoint de Saúde:** `http://localhost:8080/actuator/health` ➔ `{"status":"UP"}`
+
+---
+
+### 3. Executando o Frontend (React + Vite + Express)
+O frontend consome os endpoints do Spring Boot e provê a interface com seletor de volumes, IA e carrinho em tempo real.
 
 ```bash
 cd manga-store
@@ -56,321 +87,84 @@ cd manga-store
 # Instalar dependências
 npm install
 
-# Rodar servidor de desenvolvimento (porta 3000)
+# Iniciar servidor de desenvolvimento (Porta 5173)
 npm run dev
 
+# Validação de tipos (Lint)
+npm run lint
+
 # Build de produção
-npm run build && npm start
+npm run build
 ```
 
-### API (Express — porta 3000)
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/api/manga` | Lista mangás (`?category=` `?q=` `?sortBy=` `?maxPrice=`) |
-| `GET` | `/api/manga/best-sellers` | Top 10 por rank |
-| `GET` | `/api/manga/:id` | Detalhe por ID |
-| `POST` | `/api/manga/:id/reviews` | Adicionar review |
-| `POST` | `/api/cart/checkout` | Finalizar pedido |
-
-**Verificação rápida:**
-```bash
-# Todos os mangás
-curl http://localhost:3000/api/manga | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'{d[\"count\"]} mangás')"
-
-# Filtrar categoria
-curl "http://localhost:3000/api/manga?category=Shonen&sortBy=rating"
-
-# Checkout com promo
-curl -X POST http://localhost:3000/api/cart/checkout \
-  -H "Content-Type: application/json" \
-  -d '{"items":[{"mangaId":"one-piece-vol-105","format":"Paperback","price":11.99,"quantity":1,"volumeNumber":105}],"promoCode":"MANGA20"}'
-```
-
-**Códigos promocionais:**
-| Código | Desconto |
-|--------|----------|
-| `MANGA20` | 20% |
-| `OTAKU10` | 10% |
-
-> Frete grátis em pedidos acima de **$35**.
+> **Aplicação Web:** Acesse no navegador em `http://localhost:5173`
 
 ---
 
-## ☕ manga-store-api (Backend Spring Boot)
+## 🤖 Conformidade: Aula 02 - Pré-requisitos do Projeto de E-Commerce
 
-Backend REST API que espelha todos os endpoints do Express, com **dados reais da [MangaDex API](https://api.mangadex.org)**.
+O projeto cumpre integralmente os 4 pilares exigidos na disciplina de Inteligência Artificial:
 
-### Stack
-| Tecnologia | Versão |
-|-----------|--------|
-| Java | 21 |
-| Spring Boot | 3.3.4 |
-| Spring Web (REST) | — |
-| Jackson | — |
-| Maven | 3.9+ |
+| Requisito | Especificação do Projeto | Implementação Técnica |
+| :--- | :--- | :--- |
+| **1. Frontend Funcional** | Campo de texto para a pergunta, botão de envio via JavaScript e espaço reservado (`<div>`/`<ul>`) para injeção da resposta da IA. | Componente `AIAssistantModal.tsx` com design clean e robusto estilo Amazon: `<input id="ai-question-input">`, `<button id="ai-submit-button">` capturando evento de formulário e `<div id="ai-response-container">` com renderização dinâmica de respostas. Acesso direto pelo botão flutuante circular elegante (`#floating-ai-assistant-btn`) no canto inferior direito. |
+| **2. Servidor Seguro** | Backend configurado (Node.js/Spring) para intermediar chamadas à IA de forma segura sem expor credenciais. | Rota `POST /api/ai/ask` configurada tanto no servidor Express (`server.ts`) com o SDK oficial `@google/genai` quanto no Spring Boot (`AIController.java`). A chave de API nunca é exposta no cliente, com timeout resiliente e fallback inteligente. |
+| **3. Variáveis de Ambiente** | Arquivo `.env` na raiz do projeto e biblioteca `dotenv` instalada para guardar e carregar tokens. | Arquivo único canônico [`.env`](.env) na raiz com `GEMINI_API_KEY`, carregado via biblioteca `dotenv` no backend Node.js e gerenciado via propriedades de ambiente no Spring Boot. |
+| **4. Controle Seguro** | Arquivo `.gitignore` configurado desde o início com a linha `.env`. | [`.gitignore`](.gitignore) único e centralizado na raiz protegendo `.env*`, builds (`target/`, `dist/`) e dependências contra vazamentos no repositório. |
 
-### Dados
-- **Primários**: MangaDex API v5 — títulos reais, capas oficiais, autores, ratings
-- **Fallback**: 10 mangás curados em memória (se API offline)
+---
 
-### Requisitos
+## 🛍️ Principais Funcionalidades do E-Commerce
 
-```bash
-# Ubuntu/Debian
-sudo apt-get install -y openjdk-21-jdk maven
+### 1. Seletor de Volumes e Capítulos
+- Cada obra no catálogo permite selecionar o **volume específico** (ex: *One Piece Vol. 1* ao *108*, *Berserk Vol. 1* ao *41*).
+- Indicação clara da faixa de **capítulos inclusos** em cada volume (ex: *Vol. 1: Capítulos 1–9*).
+- O carrinho e o checkout suportam múltiplos volumes diferentes do mesmo título no mesmo pedido.
 
-# Verificar instalação
-java -version   # openjdk 21.x.x
-mvn -version    # Apache Maven 3.x.x
-```
+### 2. Look Inside ("Espiar por Dentro")
+- Permite pré-visualizar as páginas iniciais do mangá diretamente no navegador antes da compra, com controles de zoom e leitura oriental (da direita para a esquerda).
+- Botão acessível tanto via hover no desktop quanto por toque direto no mobile.
 
-### Como rodar
+### 3. Guia de Leitura Interativo
+- Página completa com arcos canônicos, equivalência entre capítulos do mangá e episódios do anime, e chips de acesso rápido para as séries mais populares.
 
-```bash
-cd manga-store-api
+### 4. Carrinho e Checkout Completo
+- Gaveta lateral com cálculo dinâmico de frete grátis, cupons (`MANGA20`, `OTAKU10`), comprovante de pedido e código de rastreio simulado.
 
-# Com dados reais da MangaDex (padrão)
-mvn spring-boot:run
+### 5. Internacionalização (i18n)
+- 4 idiomas suportados em tempo real sem recarregar a página: **Português (PT)**, **Inglês (EN)**, **Espanhol (ES)** e **Japonês (JA)**.
 
-# Modo offline (dados mockados)
-mvn spring-boot:run -Dmangadex.enabled=false
+---
 
-# Build JAR executável
-mvn package -DskipTests
-java -jar target/manga-store-api-1.0.0-SNAPSHOT.jar
-```
+## 📡 Tabela de Endpoints RESTful
 
-> Roda na porta **8080** por padrão.
+| Método | Endpoint | Origem | Descrição |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/manga` | Spring Boot | Catálogo de mangás com paginação, filtros e ordenação |
+| `GET` | `/api/manga/best-sellers` | Spring Boot | Ranking Top 10 mais vendidos |
+| `GET` | `/api/manga/{id}` | Spring Boot | Detalhes de um mangá por ID |
+| `POST` | `/api/manga/{id}/reviews` | Spring Boot | Adicionar avaliação com verificação de compra |
+| `POST` | `/api/cart/checkout` | Spring Boot | Finalização de pedido com cálculo de frete e cupom |
+| `POST` | `/api/ai/ask` | Node/Spring | Endpoint seguro de consulta à Inteligência Artificial |
+| `GET` | `/api/ai/status` | Node/Spring | Diagnóstico de status e chave de API do módulo de IA |
+| `GET` | `/actuator/health` | Spring Boot | Verificação de integridade do servidor Java |
 
-### API (Spring Boot — porta 8080)
+---
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `GET` | `/api/manga` | Lista mangás com filtros |
-| `GET` | `/api/manga/best-sellers` | Top 10 por rank |
-| `GET` | `/api/manga/{id}` | Detalhe por ID (UUID MangaDex) |
-| `POST` | `/api/manga/{id}/reviews` | Adicionar review |
-| `POST` | `/api/manga/reload` | Recarrega dados da MangaDex API |
-| `POST` | `/api/cart/checkout` | Finalizar pedido |
-| `GET` | `/actuator/health` | Health check |
-
-### Verificação rápida
+## 🧪 Como Testar via Terminal (Exemplos Práticos)
 
 ```bash
-# Listar mangás reais
-curl http://localhost:8080/api/manga | jq '.count, .data[0].title'
-
-# Forçar recarga da MangaDex
-curl -X POST http://localhost:8080/api/manga/reload
-
-# Health check
+# 1. Health check do Spring Boot
 curl http://localhost:8080/actuator/health
-```
 
-### Configuração
+# 2. Status do módulo de IA
+curl http://localhost:5173/api/ai/status
 
-```properties
-# application.properties
-mangadex.enabled=true     # false = sempre usa dados mockados
-mangadex.timeout=10000    # timeout em ms para chamadas externas
-server.port=8080
-```
-
-### Integração com o Frontend
-
-Para usar o Spring Boot como backend em vez do Express:
-
-1. Inicie o Spring Boot: `mvn spring-boot:run` (porta 8080)
-2. No `vite.config.ts`, adicione proxy:
-```ts
-server: {
-  proxy: {
-    '/api': 'http://localhost:8080'
-  }
-}
-```
-3. O frontend continua rodando em `:3000` (Vite) — as chamadas `/api/*` serão redirecionadas para `:8080`.
-
----
-
-## 🧪 Resultados dos Testes (Spring Boot + MangaDex API)
-
-Todos os endpoints testados e funcionando nativamente, consumindo dados diretamente da MangaDex API:
-
-```
-✅ GET  /api/manga               → 25 mangás retornados (dados reais)
-✅ GET  /api/manga/best-sellers  → top 10 por rank (dados reais)
-✅ GET  /api/manga?category=Shonen → filtro por categoria
-✅ GET  /api/manga?q=one+piece   → busca textual
-✅ GET  /api/manga?sortBy=price-low → ordenação por preço
-✅ GET  /api/manga/{id}          → detalhe por ID do MangaDex
-✅ POST /api/manga/:id/reviews   → review criada localmente
-✅ POST /api/cart/checkout       → pedido com frete grátis (> $35)
-✅ POST /api/cart/checkout (MANGA20) → 20% de desconto aplicado
-✅ POST /api/cart/checkout (items:[]) → 400 { error: "Cart is empty" }
-```
-
----
-
-## 📁 Componentes Frontend
-
-| Componente | Descrição |
-|-----------|-----------|
-| `Header.tsx` | Navbar sticky, busca colapsável no mobile, seletor de idioma |
-| `HeroCarousel.tsx` | Carousel com 3 slides, autoplay 6.5s, altura adaptativa |
-| `ProductCard.tsx` | Card de produto com formato selecionável e add-to-cart |
-| `BestSellersRankGrid.tsx` | Grade de best sellers com filtros e ordenação |
-| `CartDrawer.tsx` | Carrinho lateral animado (`slide-in-right`) |
-| `CheckoutModal.tsx` | Modal de checkout completo com endereço e pagamento |
-| `ProductDetailModal.tsx` | Detalhe completo do mangá com reviews e formatos |
-| `LookInsideModal.tsx` | Preview de páginas do mangá |
-| `ReadingGuideModal.tsx` | Guia de leitura de mangá |
-| `Footer.tsx` | Rodapé responsivo 2→4 colunas |
-
----
-
-## 🗂️ Dados Mockados (Express/TypeScript)
-
-12 mangás no `mangaData.ts`, incluindo:
-- One Piece Vol. 105 · Jujutsu Kaisen Vol. 24 · Berserk Deluxe Vol. 1
-- Frieren Vol. 1 · Dandadan Vol. 1 · Chainsaw Man Vol. 15
-- Vinland Saga · Blue Lock · Spy x Family · Demon Slayer Box Set
-- My Hero Academia Vol. 40 · Dungeon Meshi (Delicious in Dungeon)
-
----
-
-## 👨‍💻 Desenvolvido para
-
-**Inteligência Artificial** — Faculdade  
-Projeto: Aplicação web com backend RESTful e frontend responsivo
-
-# Mangazon API — Spring Boot Backend
-
-Backend REST API para o projeto Manga Store, implementado em **Java 21 + Spring Boot 3.3**.
-Busca dados **reais** da [MangaDex API](https://api.mangadex.org) ao inicializar.
-Fallback automático para dados mockados se a API estiver offline.
-
-## Fontes de Dados
-
-| Fonte | Quando usa |
-|-------|-----------|
-| 🌐 **MangaDex API** (dados reais) | `mangadex.enabled=true` (padrão) + API disponível |
-| 📦 **Mock data** (10 mangás curados) | API indisponível ou `mangadex.enabled=false` |
-
-### O que vem da MangaDex API
-- Títulos reais (japonês + inglês)
-- Autores e artistas reais  
-- Capas oficiais em alta resolução (`https://uploads.mangadex.org/covers/...`)
-- Sinopses originais
-- Tags/gêneros reais
-- Datas de lançamento reais
-- Ratings (convertidos da escala 1-10 para 1-5)
-- Top mangás por número de seguidores
-
-## Estrutura
-
-```
-src/main/java/com/mangazon/api/
-├── MangaStoreApiApplication.java
-├── config/
-│   └── CorsConfig.java              ← CORS + RestTemplate bean com timeout
-├── controller/
-│   ├── MangaController.java         ← GET/POST /api/manga/** + POST /api/manga/reload
-│   └── CartController.java          ← POST /api/cart/checkout
-├── service/
-│   ├── MangaService.java            ← Filtros, ordenação, reviews
-│   └── CartService.java             ← Checkout com promo codes
-├── data/
-│   ├── MangaDexService.java         ← Cliente MangaDex API (dados reais)
-│   ├── MangaDexDto.java             ← DTOs para deserializar respostas
-│   └── MangaDataStore.java          ← Cache em memória + fallback mockado
-└── model/
-    ├── Manga.java, MangaFormat.java, Review.java
-    ├── CartItem.java, Order.java
-```
-
-## Requisitos
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install -y openjdk-21-jdk maven
-```
-
-## Como Executar
-
-```bash
-cd manga-store-api
-
-# Rodar com dados reais da MangaDex (padrão)
-mvn spring-boot:run
-
-# Rodar com dados mockados (offline/desenvolvimento)
-mvn spring-boot:run -Dmangadex.enabled=false
-
-# Build JAR
-mvn package -DskipTests
-java -jar target/manga-store-api-1.0.0-SNAPSHOT.jar
-```
-
-## Endpoints
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/manga` | Lista mangás com filtros |
-| GET | `/api/manga/best-sellers` | Top 10 mais vendidos |
-| GET | `/api/manga/{id}` | Detalhes (por ID MangaDex UUID) |
-| POST | `/api/manga/{id}/reviews` | Adicionar avaliação |
-| POST | `/api/manga/reload` | Recarrega dados da MangaDex API |
-| POST | `/api/cart/checkout` | Finalizar pedido |
-
-### Filtros — GET /api/manga
-
-| Param | Tipo | Exemplo |
-|-------|------|---------|
-| `category` | string | `Shonen`, `Seinen`, `Dark Fantasy` |
-| `q` | string | Busca em título, autor, tags, sinopse |
-| `sortBy` | string | `rank`, `rating`, `price-low`, `price-high` |
-| `maxPrice` | number | `15.00` |
-
-### Códigos Promocionais — checkout
-
-| Código | Desconto |
-|--------|----------|
-| `MANGA20` | 20% |
-| `OTAKU10` | 10% |
-
-Frete grátis em pedidos acima de **$35**.
-
-## Testar com curl
-
-```bash
-# Listar todos (dados reais da MangaDex)
-curl http://localhost:8080/api/manga | jq '.count, .data[0].title'
-
-# Forçar recarga dos dados
-curl -X POST http://localhost:8080/api/manga/reload
-
-# Best Sellers
-curl http://localhost:8080/api/manga/best-sellers | jq '.bestSellers[0].title'
-
-# Buscar por gênero
-curl "http://localhost:8080/api/manga?category=Shonen"
-
-# Adicionar review (use o UUID do MangaDex como ID)
-curl -X POST http://localhost:8080/api/manga/c52b2ce3-7f95-469c-96b0-479524fb7a1a/reviews \
+# 3. Fazer uma pergunta para a IA via Backend
+curl -X POST http://localhost:5173/api/ai/ask \
   -H "Content-Type: application/json" \
-  -d '{"author":"João","rating":5,"title":"Épico!","content":"Melhor manga!","formatPurchased":"Paperback"}'
+  -d '{"prompt": "Em qual volume de One Piece o Luffy usa o Gear 5?"}'
 
-# Checkout com promo
-curl -X POST http://localhost:8080/api/cart/checkout \
-  -H "Content-Type: application/json" \
-  -d '{"items":[{"mangaId":"abc","format":"Paperback","price":11.99,"quantity":1,"volumeNumber":1}],"promoCode":"MANGA20"}'
-```
-
-## Configuração (application.properties)
-
-```properties
-mangadex.enabled=true         # false = sempre usa mock data
-mangadex.timeout=10000        # timeout em ms para chamadas à MangaDex API
+# 4. Listar primeiros 5 mangás do catálogo
+curl "http://localhost:8080/api/manga?page=1&limit=5"
 ```

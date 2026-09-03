@@ -1,14 +1,14 @@
 import React from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight } from 'lucide-react';
-import { CartItem, MangaFormat } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { X, Trash2, Plus, Minus, ShoppingBag, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { CartItem, MangaFormat } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (mangaId: string, format: MangaFormat, newQty: number) => void;
-  onRemoveItem: (mangaId: string, format: MangaFormat) => void;
+  onUpdateQuantity: (mangaId: string, format: MangaFormat, volumeNumber: number, newQty: number) => void;
+  onRemoveItem: (mangaId: string, format: MangaFormat, volumeNumber: number) => void;
   onProceedToCheckout: () => void;
   onClearCart: () => void;
 }
@@ -75,7 +75,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
-                <span className="text-[#00A8E1] italic font-black text-sm">✓prime</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>{t.freeShippingUnlocked}</span>
               </div>
             )}
@@ -84,21 +84,34 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Items */}
           <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
             {items.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 space-y-3">
-                <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto" />
-                <p className="text-base font-medium">{t.emptyCartTitle}</p>
-                <p className="text-xs text-gray-400">{t.emptyCartSub}</p>
+              <div className="text-center py-12 text-gray-500 space-y-4">
+                <ShoppingBag className="w-14 h-14 text-gray-300 mx-auto" />
+                <div>
+                  <p className="text-base font-bold text-gray-800">{t.emptyCartTitle}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t.emptyCartSub}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="mt-2 bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 font-bold px-6 py-2.5 rounded-full text-xs shadow-sm transition-colors cursor-pointer inline-flex items-center gap-2"
+                >
+                  <span>Explorar Mais Vendidos</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             ) : (
               items.map((item) => (
                 <div
-                  key={`${item.mangaId}-${item.format}`}
+                  key={`${item.mangaId}-${item.format}-vol${item.volumeNumber}`}
                   className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs"
                 >
                   <img
                     src={item.manga.coverImage}
                     alt={item.manga.title}
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80';
+                    }}
                     className="w-12 sm:w-14 h-18 sm:h-20 object-cover rounded shadow flex-shrink-0"
                   />
                   <div className="flex-1 flex flex-col justify-between min-w-0">
@@ -106,8 +119,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <h4 className="font-bold text-gray-900 line-clamp-2 text-xs sm:text-sm leading-snug">
                         {item.manga.title}
                       </h4>
-                      <p className="text-gray-500 text-[11px] mt-0.5">{translateFormat(item.format)}</p>
-                      <div className="font-black text-gray-900 mt-1">{formatPrice(item.price)}</div>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="bg-[#FF9900]/20 text-[#B12704] font-black text-[10px] px-2 py-0.5 rounded border border-[#FF9900]/40">
+                          Volume {item.volumeNumber}
+                        </span>
+                        <span className="text-gray-500 text-[11px] font-medium">{translateFormat(item.format)}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        Capítulos {(item.volumeNumber - 1) * 9 + 1}–{item.volumeNumber * 9}
+                      </div>
+                      <div className="font-black text-gray-900 mt-1.5">{formatPrice(item.price)}</div>
                     </div>
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
@@ -115,7 +136,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <div className="flex items-center border border-gray-300 rounded bg-white overflow-hidden">
                         <button
                           onClick={() =>
-                            onUpdateQuantity(item.mangaId, item.format, Math.max(1, item.quantity - 1))
+                            onUpdateQuantity(item.mangaId, item.format, item.volumeNumber, Math.max(1, item.quantity - 1))
                           }
                           className="p-1 hover:bg-gray-100 text-gray-600 cursor-pointer"
                         >
@@ -124,7 +145,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         <span className="px-2 font-bold text-gray-800 text-[11px]">{item.quantity}</span>
                         <button
                           onClick={() =>
-                            onUpdateQuantity(item.mangaId, item.format, item.quantity + 1)
+                            onUpdateQuantity(item.mangaId, item.format, item.volumeNumber, item.quantity + 1)
                           }
                           className="p-1 hover:bg-gray-100 text-gray-600 cursor-pointer"
                         >
@@ -133,7 +154,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </div>
 
                       <button
-                        onClick={() => onRemoveItem(item.mangaId, item.format)}
+                        onClick={() => onRemoveItem(item.mangaId, item.format, item.volumeNumber)}
                         className="text-gray-400 hover:text-rose-600 p-1 cursor-pointer transition-colors"
                         title={t.deleteItem}
                       >

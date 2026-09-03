@@ -43,7 +43,7 @@ export const SellPage: React.FC = () => {
             </div>
             <h3 className="font-bold text-lg mb-2">Fulfillment da Mangazon</h3>
             <p className="text-gray-600 text-sm">
-              Você armazena seus produtos nos nossos centros de distribuição e nós embalamos, enviamos e prestamos atendimento ao cliente (Prime).
+              Você armazena seus produtos nos nossos centros de distribuição e nós embalamos, enviamos com frete grátis e prestamos atendimento ao cliente.
             </p>
           </div>
           

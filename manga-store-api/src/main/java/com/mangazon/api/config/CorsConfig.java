@@ -32,7 +32,7 @@ public class CorsConfig implements WebMvcConfigurer {
     }
 
     /**
-     * RestTemplate bean with timeout configured for external API calls (MangaDex).
+     * RestTemplate bean with timeout configured for external API calls (AniList GraphQL).
      */
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {

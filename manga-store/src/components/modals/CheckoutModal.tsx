@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, ShieldCheck, Truck, CreditCard, Tag, Package, ArrowRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { CartItem, OrderItem } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { CartItem, OrderItem } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -20,8 +20,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClearCart,
 }) => {
   const { t, formatPrice, translateFormat, language } = useLanguage();
-  if (!isOpen) return null;
 
+  // ── All hooks must be declared before any conditional return ──
   const [step, setStep] = useState<'review' | 'success'>('review');
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
@@ -39,11 +39,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'points' | 'oneclick'>('oneclick');
 
+  // Totals — aligned with CartService.java (no tax applied on backend)
   const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const discount = subtotal * promoDiscountRate;
   const shipping = subtotal > 35 ? 0 : 4.99;
-  const estimatedTax = subtotal * 0.0825;
-  const grandTotal = Math.max(0, subtotal - discount + shipping + estimatedTax);
+  const grandTotal = Math.max(0, subtotal - discount + shipping);
+
+  // Conditional render after all hooks
+  if (!isOpen) return null;
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +78,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             zipCode,
             country: language === 'pt' ? 'Brasil' : 'United States',
           },
-          paymentMethod: paymentMethod === 'oneclick' ? 'MangaPrime 1-Click Visa' : 'Otaku Points',
+          paymentMethod: paymentMethod === 'oneclick' ? 'Cartão Cadastrado Visa' : 'Otaku Points',
           promoCode: appliedPromo,
         }),
       });
@@ -214,10 +217,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         />
                         <div>
                           <div className="font-bold text-gray-900">{t.oneClickPayment}</div>
-                          <div className="text-gray-500 text-[11px]">Visa •••• 8892 (MangaPrime Express)</div>
+                          <div className="text-gray-500 text-[11px]">Visa •••• 8892 (Pagamento Rápido)</div>
                         </div>
                       </div>
-                      <span className="font-black text-[#00A8E1] italic text-xs">✓prime</span>
+                      <span className="font-bold text-teal-700 text-xs">1-Clique</span>
                     </label>
 
                     <label 
@@ -282,9 +285,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {/* Items summary */}
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {items.map((item) => (
-                      <div key={`${item.mangaId}-${item.format}`} className="flex justify-between text-xs text-gray-700">
-                        <span className="truncate max-w-[170px]">
-                          {item.quantity}x {item.manga.title} ({translateFormat(item.format).split(' ')[0]})
+                      <div key={`${item.mangaId}-${item.format}-vol${item.volumeNumber}`} className="flex justify-between text-xs text-gray-700">
+                        <span className="truncate max-w-[210px]">
+                          {item.quantity}x {item.manga.title} — Vol. {item.volumeNumber} ({translateFormat(item.format).split(' ')[0]})
                         </span>
                         <span className="font-semibold text-gray-900">
                           {formatPrice(item.price * item.quantity)}
@@ -310,10 +313,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <span className="text-[#007600] font-bold">
                         {shipping === 0 ? t.freeShipping : formatPrice(shipping)}
                       </span>
-                    </div>
-                    <div className="flex justify-between text-gray-600">
-                      <span>{t.taxLabel}:</span>
-                      <span>{formatPrice(estimatedTax)}</span>
                     </div>
                     <div className="flex justify-between text-sm font-black text-gray-900 pt-2 border-t border-gray-200">
                       <span>{t.grandTotal}</span>

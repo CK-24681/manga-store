@@ -12,3 +12,15 @@ Content-Type: application/json
   "promoCode": "MANGA20"
 }
 
+###
+# AI Status Check
+GET http://localhost:8080/api/ai/status
+
+###
+# AI Ask Question
+POST http://localhost:8080/api/ai/ask
+Content-Type: application/json
+
+{
+  "prompt": "Em qual volume de One Piece o Luffy desperta o Gear 5?"
+}

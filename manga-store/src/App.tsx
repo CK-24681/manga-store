@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Header } from './components/Header';
-import { HeroCarousel } from './components/HeroCarousel';
-import { BestSellersRankGrid } from './components/BestSellersRankGrid';
-import { ProductDetailModal } from './components/ProductDetailModal';
-import { LookInsideModal } from './components/LookInsideModal';
-import { CartDrawer } from './components/CartDrawer';
-import { CheckoutModal } from './components/CheckoutModal';
-import { ReadingGuideModal } from './components/ReadingGuideModal';
-import { Footer } from './components/Footer';
-import { SellPage } from './components/SellPage';
+import {
+  Header,
+  HeroCarousel,
+  BestSellersRankGrid,
+  ProductDetailModal,
+  LookInsideModal,
+  CartDrawer,
+  CheckoutModal,
+  AIAssistantModal,
+  Footer,
+} from './components';
+import { ReadingGuidePage, SellPage } from './pages';
 import { CartItem, MangaCategory, MangaFormat, MangaItem, OrderItem } from './types';
 import { useLanguage } from './context/LanguageContext';
-import { Check, ArrowRight, BookOpen, Truck, Star } from 'lucide-react';
+import { Check, ArrowRight, BookOpen, Truck, Star, X, Bot, Sparkles } from 'lucide-react';
 
 export default function App() {
   const { t, formatPrice, translateFormat, translateCategory } = useLanguage();
@@ -19,6 +21,14 @@ export default function App() {
   const [bestSellers, setBestSellers] = useState<MangaItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<MangaCategory>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,14 +38,14 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Routing state
-  const [currentView, setCurrentView] = useState<'home' | 'releases' | 'deals' | 'sell'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'releases' | 'deals' | 'sell' | 'reading-guide'>('home');
 
   // Modals state
   const [selectedManga, setSelectedManga] = useState<MangaItem | null>(null);
   const [lookInsideManga, setLookInsideManga] = useState<MangaItem | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isReadingGuideOpen, setIsReadingGuideOpen] = useState(false);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -47,14 +57,14 @@ export default function App() {
     setIsLoading(true);
     const params = new URLSearchParams({
       page: currentPage.toString(),
-      limit: '20'
+      limit: '32'
     });
-    if (searchQuery) params.append('q', searchQuery);
+    if (debouncedSearch) params.append('q', debouncedSearch);
     if (selectedCategory !== 'All') params.append('category', selectedCategory);
     
     // Custom sort based on view
     let currentSort = sortBy;
-    if (currentView === 'releases') currentSort = 'rank'; // Actually we'd sort by date but rank is fine for mock
+    if (currentView === 'releases') currentSort = 'releases';
     if (currentView === 'deals') currentSort = 'price-low';
     
     if (currentSort) params.append('sortBy', currentSort);
@@ -69,7 +79,7 @@ export default function App() {
         }
       })
       .finally(() => setIsLoading(false));
-  }, [currentPage, searchQuery, selectedCategory, sortBy, currentView]);
+  }, [currentPage, debouncedSearch, selectedCategory, sortBy, currentView]);
 
   // Load from API on mount & on dependencies change
   useEffect(() => {
@@ -97,7 +107,7 @@ export default function App() {
     if (currentView !== 'home') setCurrentView('home');
   };
 
-  const handleNavigate = (view: 'home' | 'releases' | 'deals' | 'sell') => {
+  const handleNavigate = (view: 'home' | 'releases' | 'deals' | 'sell' | 'reading-guide') => {
     setCurrentView(view);
     setCurrentPage(1);
     setSearchQuery('');
@@ -106,11 +116,13 @@ export default function App() {
   };
 
   // Cart Handlers
-  const handleAddToCart = (manga: MangaItem, format: MangaFormat, qty = 1) => {
+  const handleAddToCart = (manga: MangaItem, format: MangaFormat, qty = 1, volumeNumber = 1) => {
     const formatObj = manga.formats?.find((f) => f.format === format) || manga.formats?.[0] || { format, price: 9.99 };
+    const volNum = volumeNumber || 1;
+
     setCartItems((prev) => {
       const existingIdx = prev.findIndex(
-        (item) => item.mangaId === manga.id && item.format === format
+        (item) => item.mangaId === manga.id && item.format === format && item.volumeNumber === volNum
       );
       if (existingIdx > -1) {
         const updated = [...prev];
@@ -125,39 +137,39 @@ export default function App() {
             format,
             price: formatObj.price,
             quantity: qty,
-            volumeNumber: manga.currentVolume,
+            volumeNumber: volNum,
           },
         ];
       }
     });
 
-    setToastMessage(`"${manga.title}" (${translateFormat(format)}) ${t.addedToCart}!`);
-    setTimeout(() => setToastMessage(null), 3000);
+    setToastMessage(`"${manga.title}" — Vol. ${volNum} (${translateFormat(format)}) ${t.addedToCart}!`);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleBuyNow = (manga: MangaItem, format: MangaFormat) => {
-    handleAddToCart(manga, format, 1);
+  const handleBuyNow = (manga: MangaItem, format: MangaFormat, volumeNumber = 1) => {
+    handleAddToCart(manga, format, 1, volumeNumber);
     setSelectedManga(null);
     setIsCheckoutOpen(true);
   };
 
-  const handleUpdateQuantity = (mangaId: string, format: MangaFormat, newQty: number) => {
+  const handleUpdateQuantity = (mangaId: string, format: MangaFormat, volumeNumber: number, newQty: number) => {
     if (newQty <= 0) {
-      handleRemoveItem(mangaId, format);
+      handleRemoveItem(mangaId, format, volumeNumber);
       return;
     }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.mangaId === mangaId && item.format === format
+        item.mangaId === mangaId && item.format === format && item.volumeNumber === volumeNumber
           ? { ...item, quantity: newQty }
           : item
       )
     );
   };
 
-  const handleRemoveItem = (mangaId: string, format: MangaFormat) => {
+  const handleRemoveItem = (mangaId: string, format: MangaFormat, volumeNumber: number) => {
     setCartItems((prev) =>
-      prev.filter((item) => !(item.mangaId === mangaId && item.format === format))
+      prev.filter((item) => !(item.mangaId === mangaId && item.format === format && item.volumeNumber === volumeNumber))
     );
   };
 
@@ -165,19 +177,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#EAEDED] text-gray-900 flex flex-col font-sans selection:bg-[#FF9900] selection:text-black">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 bg-[#131921] text-white border-2 border-[#FF9900] px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-fade-in text-xs font-bold">
-          <Check className="w-4 h-4 text-[#FF9900]" />
-          <span>{toastMessage}</span>
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="bg-[#FF9900] text-black px-2.5 py-1 rounded text-[11px] font-black hover:bg-[#e68a00] cursor-pointer"
-          >
-            {t.viewCart}
-          </button>
-        </div>
-      )}
 
       {/* Amazon Header */}
       <Header
@@ -187,7 +186,7 @@ export default function App() {
         onSelectCategory={handleCategoryChange}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
-        onOpenReadingGuide={() => setIsReadingGuideOpen(true)}
+        onOpenReadingGuide={() => handleNavigate('reading-guide')}
         onNavigate={handleNavigate}
         currentView={currentView}
         onOpenBestSellers={() => {
@@ -201,6 +200,8 @@ export default function App() {
       <main className="flex-1 flex flex-col animate-fade-in" key={currentView}>
         {currentView === 'sell' ? (
           <SellPage />
+        ) : currentView === 'reading-guide' ? (
+          <ReadingGuidePage onSelectManga={setSelectedManga} />
         ) : (
           <>
             {/* View Headers */}
@@ -242,7 +243,7 @@ export default function App() {
               onSelectManga={setSelectedManga}
               onAddToCart={handleAddToCart}
               onOpenLookInside={setLookInsideManga}
-              onOpenReadingGuide={() => setIsReadingGuideOpen(true)}
+              onOpenReadingGuide={() => handleNavigate('reading-guide')}
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalItems}
@@ -296,12 +297,69 @@ export default function App() {
         onClearCart={() => setCartItems([])}
       />
 
-      <ReadingGuideModal
-        isOpen={isReadingGuideOpen}
-        onClose={() => setIsReadingGuideOpen(false)}
-        allManga={mangaList}
-        onSelectManga={setSelectedManga}
+
+      {/* Botão Flutuante do Assistente (Design Clean & Robusto) */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          id="floating-ai-assistant-btn"
+          onClick={() => setIsAIOpen(true)}
+          className="relative w-14 h-14 rounded-full bg-[#131921] hover:bg-[#232F3E] text-[#FF9900] border border-gray-700 hover:border-[#FF9900] shadow-xl hover:shadow-2xl flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 group focus:outline-none focus:ring-2 focus:ring-[#FF9900]/40"
+          title="Fale com o Assistente Mangazon"
+          aria-label="Abrir Assistente Mangazon"
+        >
+          {/* Ícone com toque minimalista */}
+          <div className="relative flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-[#FF9900] group-hover:rotate-12 transition-transform duration-300" />
+          </div>
+
+          {/* Indicador de Status Discreto */}
+          <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#131921]" />
+
+          {/* Tooltip Clean no Desktop */}
+          <div className="hidden lg:block absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+            <div className="bg-[#131921] text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-700 shadow-xl flex items-center gap-1.5">
+              <span>Assistente Mangazon</span>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* AI Assistant Modal (Requisito 1: Interface Funcional) */}
+      <AIAssistantModal
+        isOpen={isAIOpen}
+        onClose={() => setIsAIOpen(false)}
       />
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div 
+          id="cart-toast-notification"
+          className="fixed bottom-24 sm:bottom-28 right-6 z-50 bg-[#131921] text-white px-4 py-3.5 rounded-xl shadow-2xl border border-gray-700 flex items-center gap-3.5 max-w-md animate-bounce-subtle"
+        >
+          <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+            <Check className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">Item Adicionado</div>
+            <div className="text-xs text-gray-200 font-medium truncate mt-0.5">{toastMessage}</div>
+          </div>
+          <button
+            onClick={() => {
+              setToastMessage(null);
+              setIsCartOpen(true);
+            }}
+            className="bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-full flex-shrink-0 transition-colors shadow-sm cursor-pointer"
+          >
+            {t.viewCart}
+          </button>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-gray-400 hover:text-white p-1 rounded-full cursor-pointer transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Amazon Footer */}
       <Footer />

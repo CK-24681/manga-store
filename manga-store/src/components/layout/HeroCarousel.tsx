@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Flame, ArrowRight } from 'lucide-react';
-import { MangaItem } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { MangaItem } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface HeroCarouselProps {
   onSelectManga?: (manga: MangaItem) => void;
@@ -136,7 +136,7 @@ export const HeroCarousel: React.FC<HeroCarouselProps> = ({
                     ({featuredItem.ratingCount.toLocaleString()})
                   </span>
                 </div>
-                <div className="text-xs font-bold text-amber-300 pt-0.5">✓prime Next-Day</div>
+                <div className="text-xs font-bold text-emerald-400 pt-0.5">Envio Expresso Mangazon</div>
               </div>
             </div>
           )}

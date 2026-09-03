@@ -1,12 +1,25 @@
+# ====================================================================
+# MangaStore - Arquivo Canônico de Controle de Versão (.gitignore)
+# ====================================================================
+
+# Dependências
 node_modules/
+
+# Saídas de compilação e build
 dist/
 build/
 target/
+coverage/
 *.class
 *.jar
+*.log
+
+# Variáveis de ambiente e segredos (NUNCA commitados no Git)
 .env
+.env.*
+!.env.example
+
+# Arquivos de IDE e Sistema Operacional
 .DS_Store
 .idea/
 .vscode/
-*.log
-

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Logo } from './Logo';
 import { Globe, DollarSign } from 'lucide-react';
-import { Language } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { Language } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const Footer: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();

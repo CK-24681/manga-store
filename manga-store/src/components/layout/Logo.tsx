@@ -18,11 +18,6 @@ export const Logo: React.FC<LogoProps> = ({ size = 'md', showBadge = true }) => 
         <div className="flex items-baseline font-black tracking-tight leading-none">
           <span className="text-white font-extrabold font-sans">manga</span>
           <span className="text-[#FF9900] font-black italic tracking-tighter">zon</span>
-          {showBadge && (
-            <span className="ml-1 text-[10px] font-bold text-gray-400 border border-gray-600 rounded px-1 py-0.2 bg-[#1A2332]">
-              .jp
-            </span>
-          )}
         </div>
         {/* Amazon-style smile swoosh shaped like a curved Japanese Katana blade */}
         <svg

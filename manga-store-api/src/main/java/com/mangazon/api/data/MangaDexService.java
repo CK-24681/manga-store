@@ -21,29 +21,41 @@ public class MangaDexService {
     private static final String ANILIST_URL = "https://graphql.anilist.co";
     private final RestTemplate restTemplate;
 
+    /** Returns a deterministic Random seeded by the manga’s numeric ID */
+    private static Random seededRandom(int mediaId) {
+        return new Random((long) mediaId * 31L);
+    }
+
     public MangaDexService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
 
     public MangaPage searchManga(String query, String category, int limit, int offset, String order) {
         int page = (offset / limit) + 1;
+        boolean isReleases = "releases".equalsIgnoreCase(order) || "date".equalsIgnoreCase(order) || "newest".equalsIgnoreCase(order);
         String sortType = "POPULARITY_DESC";
         if (order != null && order.equals("rating")) {
             sortType = "SCORE_DESC";
+        } else if (isReleases) {
+            sortType = "START_DATE_DESC";
         }
         
-        String graphqlQuery = "query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre: String) { " +
+        String graphqlQuery = "query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre: String, $startDateGreater: FuzzyDateInt, $popularityGreater: Int) { " +
                 "Page (page: $page, perPage: $perPage) { " +
                 "pageInfo { total currentPage perPage hasNextPage } " +
-                "media (type: MANGA, sort: $sort, search: $search, genre: $genre) { " +
+                "media (type: MANGA, sort: $sort, search: $search, genre: $genre, startDate_greater: $startDateGreater, popularity_greater: $popularityGreater) { " +
                 "id title { romaji english native } coverImage { large } description(asHtml: false) " +
-                "averageScore popularity status chapters volumes genres startDate { year } " +
+                "averageScore popularity status chapters volumes genres startDate { year month day } " +
                 "staff { edges { role node { name { full } } } } } } }";
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("page", page);
         variables.put("perPage", limit);
         variables.put("sort", List.of(sortType));
+        if (isReleases) {
+            variables.put("startDateGreater", 20240101);
+            variables.put("popularityGreater", 50);
+        }
         if (query != null && !query.trim().isEmpty()) {
             variables.put("search", query);
         }
@@ -143,13 +155,12 @@ public class MangaDexService {
         manga.setCoverImage(media.coverImage != null && media.coverImage.large != null ? media.coverImage.large : "");
         manga.setPreviewImages(List.of(manga.getCoverImage()));
 
-        String desc = media.description != null ? media.description.replaceAll("<br>", "\n").replaceAll("<[^>]+>", "") : "No synopsis available.";
-        if (desc.length() > 600) desc = desc.substring(0, 597) + "...";
+        String desc = resolvePortugueseSynopsis(title, media.description);
         manga.setSynopsis(desc);
 
         // Staff
-        String author = "Unknown";
-        String artist = "Unknown";
+        String author = "Desconhecido";
+        String artist = "Desconhecido";
         if (media.staff != null && media.staff.edges != null) {
             for (AniListResponse.StaffEdge edge : media.staff.edges) {
                 if (edge.role != null && edge.role.toLowerCase().contains("story")) {
@@ -160,13 +171,13 @@ public class MangaDexService {
                 }
             }
         }
-        if (author.equals("Unknown") && artist.equals("Unknown") && media.staff != null && media.staff.edges != null && !media.staff.edges.isEmpty()) {
+        if (author.equals("Desconhecido") && artist.equals("Desconhecido") && media.staff != null && media.staff.edges != null && !media.staff.edges.isEmpty()) {
              author = media.staff.edges.get(0).node.name.full;
              artist = author;
         }
         manga.setAuthor(author);
         manga.setArtist(artist);
-        manga.setPublisher("VIZ Media / Shueisha");
+        manga.setPublisher("Panini Mangás / Shueisha");
 
         manga.setRank(rank);
         
@@ -190,29 +201,25 @@ public class MangaDexService {
         manga.setRatingCount(media.popularity != null ? media.popularity : 10000);
         manga.setRatingDistribution(Map.of(5, 75, 4, 15, 3, 6, 2, 3, 1, 1));
 
-        int volumes = media.volumes != null ? media.volumes : 1;
+        int volumes = resolveAccurateVolumes(title, media);
         manga.setVolumesCount(volumes);
-        manga.setCurrentVolume(Math.max(1, volumes));
-        manga.setPages(192 + (int)(Math.random() * 60));
-        manga.setIsbn("978-" + (1000000000L + (long)(Math.random() * 999999999L)));
-        
-        manga.setReleaseDate(media.startDate != null && media.startDate.year != null ? "January 1, " + media.startDate.year : "Unknown");
-        manga.setAgeRating("Teen (13+)");
+        manga.setCurrentVolume(Math.max(1, volumes > 1 ? volumes - 2 : volumes));
+
+        // Use a seeded Random for deterministic values (same manga → same price/pages/ISBN)
+        Random rng = seededRandom(media.id);
+        manga.setPages(192 + rng.nextInt(60));
+        manga.setIsbn("978-" + (1000000000L + (long)(rng.nextInt(999999999))));
+        manga.setReleaseDate(formatReleaseDate(media.startDate));
+        manga.setAgeRating("Classificação: 14+");
         manga.setAmazonChoice(rank <= 3);
         manga.setBestSeller(rank <= 10);
         manga.setBestSellerCategory(manga.getCategory() + " Manga");
-        manga.setPrimeEligible(true);
-        manga.setFeaturedQuote("\"" + title + "\" — One of the most acclaimed manga series.");
-        manga.setAnimeAdaptation("Anime adaptation available on Crunchyroll");
+        manga.setPrimeEligible(rng.nextInt(100) < 85);
+        manga.setFeaturedQuote("'" + title + "'" + " — Uma das obras mais aclamadas mundialmente.");
+        manga.setAnimeAdaptation("Adaptação em anime disponível nos principais streamings");
 
-        // Formats
-        double base = 9.99 + Math.random() * 3;
-        manga.setFormats(List.of(
-            new MangaFormat("Paperback", round2(base), round2(base * 1.3), 23, true, 80 + (int)(Math.random() * 120)),
-            new MangaFormat("Deluxe Hardcover", round2(base * 2.8), round2(base * 3.5), 20, true, 15 + (int)(Math.random() * 40)),
-            new MangaFormat("Kindle / Digital", round2(base * 0.65), round2(base * 0.9), 28, true, 9999),
-            new MangaFormat("Collector Box Set", round2(base * 14), round2(base * 17), 17, rank <= 5, rank <= 5 ? 20 + (int)(Math.random() * 30) : 0)
-        ));
+        // Realistic pricing across all retail price brackets
+        manga.setFormats(resolveRealisticFormats(title, manga.getCategory(), rank, manga.getPages(), rng));
 
         manga.setReviews(generateSampleReviews(manga.getId(), title, rank));
         manga.setFrequentlyBoughtTogetherIds(new ArrayList<>());
@@ -220,14 +227,220 @@ public class MangaDexService {
         return manga;
     }
 
+    private List<MangaFormat> resolveRealisticFormats(String title, String category, int rank, int pages, Random rng) {
+        String lower = title.toLowerCase();
+        
+        double basePaperbackPrice;
+        boolean isDeluxePrimary = false;
+        boolean isBoxPrimary = false;
+
+        // Specific real series pricing benchmarked against Brazilian retail (Panini, JBC, Pipoca & Nanquim)
+        if (lower.contains("berserk")) {
+            basePaperbackPrice = 14.50; // R$ 78.30 (Tankobon)
+            isDeluxePrimary = true;     // Berserk Deluxe Edition Capa Dura is the flagship
+        } else if (lower.contains("solo leveling")) {
+            basePaperbackPrice = 16.50; // R$ 89.10 (Full-color manhwa prestige format)
+        } else if (lower.contains("one piece")) {
+            basePaperbackPrice = 6.90;  // R$ 37.26 (Standard tankobon)
+        } else if (lower.contains("chainsaw man")) {
+            basePaperbackPrice = 6.40;  // R$ 34.56
+        } else if (lower.contains("jujutsu kaisen")) {
+            basePaperbackPrice = 6.60;  // R$ 35.64
+        } else if (lower.contains("demon slayer") || lower.contains("kimetsu")) {
+            basePaperbackPrice = 6.20;  // R$ 33.48
+        } else if (lower.contains("naruto")) {
+            basePaperbackPrice = 7.80;  // R$ 42.12
+        } else if (lower.contains("dragon ball")) {
+            basePaperbackPrice = 5.90;  // R$ 31.86
+        } else if (lower.contains("hunter x hunter")) {
+            basePaperbackPrice = 7.20;  // R$ 38.88
+        } else if (lower.contains("attack on titan") || lower.contains("shingeki")) {
+            basePaperbackPrice = 7.40;  // R$ 39.96
+        } else if (lower.contains("bleach")) {
+            basePaperbackPrice = 7.50;  // R$ 40.50
+        } else if (lower.contains("death note")) {
+            basePaperbackPrice = 12.90; // R$ 69.66 (Black Edition 2-em-1)
+        } else if (lower.contains("fullmetal")) {
+            basePaperbackPrice = 8.90;  // R$ 48.06
+        } else if (lower.contains("spy x family")) {
+            basePaperbackPrice = 6.90;  // R$ 37.26
+        } else if (lower.contains("tokyo ghoul")) {
+            basePaperbackPrice = 8.20;  // R$ 44.28
+        } else if ("Box Sets & Special Editions".equalsIgnoreCase(category) || lower.contains("box") || lower.contains("set")) {
+            basePaperbackPrice = 12.00;
+            isBoxPrimary = true;
+        } else {
+            // General catalog titles: distributed smoothly across the 4 price brackets:
+            // Bracket 0: Até R$ 50 -> USD 4.80 to 8.80 (R$ 25.90 to R$ 47.50) (~30% of catalog)
+            // Bracket 1: R$ 50 a R$ 80 -> USD 9.50 to 14.50 (R$ 51.30 to R$ 78.30) (~35% of catalog)
+            // Bracket 2: R$ 80 a R$ 120 -> USD 15.50 to 21.80 (R$ 83.70 to R$ 117.70) (~20% of catalog)
+            // Bracket 3: Acima de R$ 120 -> USD 23.00 to 45.00 (R$ 124.20 to R$ 243.00) (~15% of catalog)
+            int bracketRoll = rng.nextInt(100);
+            if (bracketRoll < 32) {
+                basePaperbackPrice = 4.80 + rng.nextDouble() * 4.0;
+            } else if (bracketRoll < 66) {
+                basePaperbackPrice = 9.50 + rng.nextDouble() * 5.0;
+            } else if (bracketRoll < 86) {
+                basePaperbackPrice = 15.50 + rng.nextDouble() * 6.0;
+            } else {
+                basePaperbackPrice = 23.00 + rng.nextDouble() * 20.0;
+                isDeluxePrimary = true;
+            }
+        }
+
+        // Realistic discounts (savings percent)
+        boolean hasPaperbackDiscount = rng.nextInt(100) < 55;
+        int paperbackSavings = hasPaperbackDiscount ? (10 + rng.nextInt(20)) : 0;
+        double paperbackOriginal = hasPaperbackDiscount ? round2(basePaperbackPrice * (1.0 + (paperbackSavings / 100.0) * 1.2)) : round2(basePaperbackPrice);
+
+        // Stock availability
+        boolean paperbackInStock = rng.nextInt(100) > 8;
+        int paperbackStockCount = paperbackInStock ? (20 + rng.nextInt(180)) : 0;
+
+        // Deluxe format
+        double deluxePrice = isDeluxePrimary ? round2(29.90 + rng.nextDouble() * 15.0) : round2(basePaperbackPrice * 2.3);
+        boolean hasDeluxeDiscount = rng.nextInt(100) < 45;
+        int deluxeSavings = hasDeluxeDiscount ? (12 + rng.nextInt(18)) : 0;
+        double deluxeOriginal = hasDeluxeDiscount ? round2(deluxePrice * (1.0 + (deluxeSavings / 100.0) * 1.15)) : round2(deluxePrice);
+        boolean deluxeInStock = rng.nextInt(100) > 12;
+
+        // Digital format
+        double digitalPrice = round2(basePaperbackPrice * 0.55);
+        int digitalSavings = 25;
+        double digitalOriginal = round2(digitalPrice * 1.33);
+
+        // Box set format
+        double boxPrice = isBoxPrimary ? round2(45.0 + rng.nextDouble() * 45.0) : round2(basePaperbackPrice * 8.5);
+        boolean hasBoxDiscount = rng.nextInt(100) < 60;
+        int boxSavings = hasBoxDiscount ? (15 + rng.nextInt(20)) : 0;
+        double boxOriginal = hasBoxDiscount ? round2(boxPrice * (1.0 + (boxSavings / 100.0) * 1.2)) : round2(boxPrice);
+        boolean boxInStock = (rank <= 8 || isBoxPrimary) && (rng.nextInt(100) > 15);
+
+        MangaFormat paperbackFmt = new MangaFormat("Paperback", round2(basePaperbackPrice), paperbackOriginal, paperbackSavings, paperbackInStock, paperbackStockCount);
+        MangaFormat deluxeFmt = new MangaFormat("Deluxe Hardcover", deluxePrice, deluxeOriginal, deluxeSavings, deluxeInStock, deluxeInStock ? 15 + rng.nextInt(35) : 0);
+        MangaFormat digitalFmt = new MangaFormat("Kindle / Digital", digitalPrice, digitalOriginal, digitalSavings, true, 9999);
+        MangaFormat boxFmt = new MangaFormat("Collector Box Set", boxPrice, boxOriginal, boxSavings, boxInStock, boxInStock ? 5 + rng.nextInt(25) : 0);
+
+        List<MangaFormat> formats = new ArrayList<>();
+        if (isDeluxePrimary) {
+            formats.add(deluxeFmt);
+            formats.add(paperbackFmt);
+            formats.add(digitalFmt);
+            formats.add(boxFmt);
+        } else if (isBoxPrimary) {
+            formats.add(boxFmt);
+            formats.add(paperbackFmt);
+            formats.add(deluxeFmt);
+            formats.add(digitalFmt);
+        } else {
+            formats.add(paperbackFmt);
+            formats.add(deluxeFmt);
+            formats.add(digitalFmt);
+            formats.add(boxFmt);
+        }
+        return formats;
+    }
+
+    private int resolveAccurateVolumes(String title, AniListResponse.Media media) {
+        String lower = title.toLowerCase();
+        if (lower.contains("one piece")) return 108;
+        if (lower.contains("naruto")) return 72;
+        if (lower.contains("bleach")) return 74;
+        if (lower.contains("attack on titan") || lower.contains("shingeki")) return 34;
+        if (lower.contains("demon slayer") || lower.contains("kimetsu")) return 23;
+        if (lower.contains("jujutsu")) return 30;
+        if (lower.contains("berserk")) return 42;
+        if (lower.contains("chainsaw")) return 18;
+        if (lower.contains("solo leveling")) return 15;
+        if (lower.contains("death note")) return 12;
+        if (lower.contains("fullmetal")) return 27;
+        if (lower.contains("hunter")) return 38;
+        if (lower.contains("dragon ball")) return 42;
+        if (lower.contains("spy x family")) return 13;
+        if (lower.contains("tokyo ghoul")) return 14;
+
+        if (media.volumes != null && media.volumes > 0) return media.volumes;
+        if (media.chapters != null && media.chapters > 0) return Math.max(1, media.chapters / 9);
+        if ("RELEASING".equalsIgnoreCase(media.status)) return 16;
+        return 1;
+    }
+
+    private String resolvePortugueseSynopsis(String title, String raw) {
+        String lower = title.toLowerCase();
+        if (lower.contains("one piece")) {
+            return "Gol D. Roger, o Rei dos Piratas, escondeu seu maior tesouro, o 'One Piece', na perigosa Grand Line. O jovem Monkey D. Luffy, com os poderes da Fruta da Borracha, parte ao mar em busca de uma tripulação para se tornar o próximo Rei dos Piratas em uma jornada repleta de lendas, mistérios e grandes batalhas.";
+        }
+        if (lower.contains("naruto")) {
+            return "Naruto Uzumaki é um jovem ninja órfão que carrega selada em seu corpo a temível Raposa de Nove Caudas. Rejeitado pelos moradores da Vila da Folha, ele treina incansavelmente e supera todos os limites ao lado do Time 7 com o sonho inabalável de se tornar Hokage, o maior líder de sua aldeia.";
+        }
+        if (lower.contains("bleach")) {
+            return "Ichigo Kurosaki é um estudante capaz de enxergar espíritos que recebe os poderes de um Shinigami através de Rukia Kuchiki para salvar sua família. Agora encarregado de proteger as almas e combater as perigosas entidades espirituais Hollows, Ichigo é arrastado para conflitos épicos na Sociedade das Almas.";
+        }
+        if (lower.contains("attack on titan") || lower.contains("shingeki")) {
+            return "A humanidade vive isolada atrás de imensas muralhas para se proteger dos gigantescos Titãs devoradores de homens. Quando o Titã Colossal destrói a muralha exterior e devora sua mãe, Eren Yeager jura exterminar cada um dos Titãs, alistando-se na Divisão de Reconhecimento para descobrir os segredos do mundo.";
+        }
+        if (lower.contains("demon slayer") || lower.contains("kimetsu")) {
+            return "Na Era Taisho japonesa, o jovem Tanjiro Kamado encontra sua família brutalmente massacrada por um demônio e sua irmã Nezuko transformada em uma criatura sedenta de sangue. Tanjiro empunha a espada e ingressa no Esquadrão de Caçadores de Demônios para encontrar uma cura e salvar sua irmã.";
+        }
+        if (lower.contains("jujutsu")) {
+            return "Yuji Itadori engole um dedo amaldiçoado do temido Rei das Maldições, Ryomen Sukuna, para proteger seus amigos do colégio. Conduzido à Escola Técnica Superior de Jujutsu de Tóquio sob a mentoria de Satoru Gojo, Yuji deve dominar a energia amaldiçoada para salvar vidas antes de sua execução programada.";
+        }
+        if (lower.contains("berserk")) {
+            return "Guts, o 'Espadachim Negro', empunha sua gigantesca espada Dragonslayer caçando apóstolos demoníacos em uma sangrenta busca por vingança contra Griffith, o antigo comandante do Bando do Falcão que o traiu no ritual proibido do Eclipse. Um marco absoluto da fantasia sombria mundial.";
+        }
+        if (lower.contains("chainsaw")) {
+            return "Denji é um jovem marginalizado afundado em dívidas que caça demônios ao lado do cão-demônio Pochita. Traído e esquartejado, Denji renasce ao se fundir com Pochita, tornando-se o híbrido 'Chainsaw Man', capaz de brotar motosserras de seus membros a serviço da Segurança Pública.";
+        }
+        if (lower.contains("solo leveling")) {
+            return "Em um mundo assolado por portais mágicos com monstros, Sung Jin-Woo é considerado o Caçador Mais Fraco da Humanidade (Rank E). Após sobreviver a uma masmorra dupla secreta, Jin-Woo é agraciado com uma interface misteriosa que permite apenas a ele subir de nível e poderes ilimitados.";
+        }
+        if (lower.contains("death note")) {
+            return "Light Yagami encontra o caderno sobrenatural 'Death Note', deixado na Terra pelo Shinigami Ryuk. Ao descobrir que pode eliminar qualquer indivíduo escrevendo seu nome nas páginas, Light decide purificar a Terra como 'Kira', iniciando uma impressionante batalha psicológica contra o detetive mundial L.";
+        }
+        if (lower.contains("hunter")) {
+            return "Gon Freecss descobre que seu pai Ging não morreu, mas é um lendário Hunter de elite. Decidido a seguir seus passos e entender essa paixão, Gon deixa sua terra natal para prestar o implacável Exame Hunter, forjando laços eternos com Killua, Kurapika e Leorio em meio a perigos mortais.";
+        }
+        if (lower.contains("dragon ball")) {
+            return "Goku é um garoto com cauda de macaco e extraordinária força física que se junta à jovem Bulma para buscar as sete místicas Esferas do Dragão, capazes de conceder qualquer desejo quando reunidas. Uma das maiores e mais influentes sagas de artes marciais de todos os tempos.";
+        }
+        if (lower.contains("fullmetal")) {
+            return "Os irmãos Edward e Alphonse Elric violam o maior tabu da Alquimia — a transmutação humana — para tentar reviver sua falecida mãe. Pagando um preço terrível na Lei da Troca Equivalente, os dois partem pelo país como alquimistas federais em busca da lendária Pedra Filosofal.";
+        }
+        if (lower.contains("spy x family")) {
+            return "Para cumprir uma missão de infiltração crucial pela paz entre nações rivais, o espião 'Twilight' forja uma família falsa: adota a garotinha Anya (uma telepata) e casa-se com Yor (uma assassina de aluguel). Nenhum sabe o segredo do outro nesta aclamada comédia de ação.";
+        }
+        if (lower.contains("tokyo ghoul")) {
+            return "Ken Kaneki sobrevive a um ataque violento de uma Ghoul — criatura que se alimenta de humanos — e acorda no hospital transformado no primeiro meio-ghoul. Ele precisa aprender a sobreviver nos submundo sombrio de Tóquio sem perder sua humanidade.";
+        }
+
+        if (raw == null || raw.trim().isEmpty()) {
+            return title + " — Mangá oficial disponível para leitura e colecionadores.";
+        }
+        String clean = raw.replaceAll("<br\\s*/?>", " ").replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
+        if (clean.length() > 500) clean = clean.substring(0, 497) + "...";
+        return clean;
+    }
+
     private List<Review> generateSampleReviews(String mangaId, String title, int rank) {
         List<Review> reviews = new ArrayList<>();
-        reviews.add(new Review("auto-r1-" + rank, mangaId, "Manga Collector", 
+        reviews.add(new Review("auto-r1-" + rank, mangaId, "Colecionador de Mangás", 
             "https://api.dicebear.com/7.x/bottts/svg?seed=collector" + rank, 5, 
-            "Verified Purchase on August 15, 2026", "An absolute must-read!", 
-            "\"" + title + "\" is one of those rare manga series that keeps getting better with each volume.", 
-            true, 42 + rank * 10, "Paperback"));
+            "Compra Verificada em 15 de Agosto de 2026", "Uma leitura indispensável!", 
+            "\"" + title + "\" é uma obra-prima que mantém o leitor fascinado a cada novo capítulo e volume.", 
+            true, 42 + rank * 10, "Capa Comum"));
         return reviews;
+    }
+
+    private String formatReleaseDate(AniListResponse.StartDate sd) {
+        if (sd == null || sd.year == null) return "Recente";
+        String[] months = {
+            "", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        };
+        int y = sd.year;
+        int m = sd.month != null && sd.month >= 1 && sd.month <= 12 ? sd.month : 1;
+        int d = sd.day != null && sd.day >= 1 && sd.day <= 31 ? sd.day : 1;
+        return d + " de " + months[m] + " de " + y;
     }
 
     private double round2(double v) {
@@ -256,7 +469,7 @@ public class MangaDexService {
         }
         public static class Title { public String romaji; public String english; public String nativeTitle; }
         public static class CoverImage { public String large; }
-        public static class StartDate { public Integer year; }
+        public static class StartDate { public Integer year; public Integer month; public Integer day; }
         public static class Staff { public List<StaffEdge> edges; }
         public static class StaffEdge { public String role; public StaffNode node; }
         public static class StaffNode { public StaffName name; }

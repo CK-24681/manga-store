@@ -8,12 +8,11 @@ import {
   Menu,
   Flame,
   Globe,
-  BookOpen,
   Check,
 } from 'lucide-react';
 import { Logo } from './Logo';
-import { Language, MangaCategory, CATEGORIES_LIST } from '../types';
-import { useLanguage } from '../context/LanguageContext';
+import { Language, MangaCategory, CATEGORIES_LIST } from '../../types';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface HeaderProps {
   cartCount: number;
@@ -25,8 +24,8 @@ interface HeaderProps {
   onOpenReadingGuide: () => void;
   onOpenBestSellers: () => void;
   onResetHome: () => void;
-  onNavigate: (view: 'home' | 'releases' | 'deals' | 'sell') => void;
-  currentView: 'home' | 'releases' | 'deals' | 'sell';
+  onNavigate: (view: 'home' | 'releases' | 'deals' | 'sell' | 'reading-guide') => void;
+  currentView: 'home' | 'releases' | 'deals' | 'sell' | 'reading-guide';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -85,7 +84,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header id="mangazon-header" className="sticky top-0 z-40 w-full flex flex-col font-sans">
 
       {/* ── Top Bar ── */}
-      <div className="bg-[#131921] text-white px-3 md:px-6 py-3 flex items-center gap-4">
+      <div className="bg-[#131921] text-white px-3 md:px-6 py-3">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
 
         {/* Logo */}
         <div
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* ── Search Bar (desktop & tablet) ── */}
         <form
           onSubmit={handleSearchSubmit}
-          className={`hidden sm:flex flex-1 items-center max-w-3xl rounded-md overflow-hidden h-10 ${
+          className={`hidden sm:flex flex-1 items-center rounded-md overflow-hidden h-10 ${
             isSearchFocused ? 'ring-2 ring-[#FF9900]' : ''
           }`}
         >
@@ -210,17 +210,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Reading Guide (md+) */}
-          <button
-            id="nav-reading-guide-btn"
-            onClick={onOpenReadingGuide}
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[#1f2937] hover:bg-[#374151] border border-gray-700 text-gray-200 font-medium transition-all cursor-pointer"
-            title={t.readingGuides}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-[#FF9900]" />
-            <span className="hidden xl:inline">{t.readingGuides}</span>
-          </button>
-
           {/* Cart */}
           <button
             id="nav-cart-btn"
@@ -241,11 +230,13 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
         </div>
+        </div>
       </div>
 
       {/* ── Mobile Search Bar (expandable) ── */}
       {isMobileSearchOpen && (
         <div className="sm:hidden bg-[#131921] px-3 pb-3">
+          <div className="max-w-7xl mx-auto">
           <form
             onSubmit={handleSearchSubmit}
             className={`flex items-center rounded-md overflow-hidden h-10 ${
@@ -281,11 +272,13 @@ export const Header: React.FC<HeaderProps> = ({
               <Search className="w-5 h-5 text-gray-900" />
             </button>
           </form>
+          </div>
         </div>
       )}
 
       {/* ── Sub Navigation Bar ── */}
-      <nav className="bg-[#232F3E] text-white px-3 md:px-6 py-1.5 flex items-center gap-2 md:gap-3 text-xs md:text-sm font-medium overflow-x-auto whitespace-nowrap scrollbar-none border-b border-gray-700">
+      <nav className="bg-[#232F3E] text-white px-3 md:px-6 py-1.5 border-b border-gray-700 overflow-x-auto scrollbar-none">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 md:gap-3 text-xs md:text-sm font-medium whitespace-nowrap">
         <button
           id="subnav-all-btn"
           onClick={() => onSelectCategory('All')}
@@ -329,8 +322,12 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
-          onClick={onOpenReadingGuide}
-          className="px-2.5 py-1 rounded hover:ring-1 hover:ring-white text-gray-300 hover:text-white transition-colors cursor-pointer flex-shrink-0"
+          onClick={() => onNavigate('reading-guide')}
+          className={`px-2.5 py-1 rounded hover:ring-1 hover:ring-white transition-colors cursor-pointer flex-shrink-0 ${
+            currentView === 'reading-guide'
+              ? 'ring-1 ring-white text-white font-bold'
+              : 'text-gray-300 hover:text-white'
+          }`}
         >
           Guia de Leitura
         </button>
@@ -345,6 +342,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           Venda na Mangazon
         </button>
+        </div>
       </nav>
     </header>
   );
