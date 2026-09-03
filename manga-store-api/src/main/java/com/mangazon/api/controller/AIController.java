@@ -61,62 +61,47 @@ public class AIController {
 
         if (p.contains("devol") || p.contains("arrepend") || p.contains("troca") || p.contains("defeito")) {
             return "📦 **Trocas e Devoluções (Código de Defesa do Consumidor)**:\n\n" +
-                   "• **Direito de Arrependimento (Art. 49 do CDC):** Prazo legal de **7 dias corridos** após o recebimento para solicitar devolução com reembolso 100% integral (produto e frete).\n" +
+                   "• **Direito de Arrependimento (Art. 49 do CDC):** Prazo legal de **7 dias corridos** após o recebimento para solicitar devolução com reembolso 100% integral (produto e frete original).\n" +
                    "• **Garantia contra Vício/Defeito (Art. 18 do CDC):** Troca imediata sem qualquer custo para o consumidor em casos de páginas danificadas ou avaria no transporte.\n" +
                    "• **Como solicitar:** Pela Central de Ajuda & FAQ na loja ou diretamente com nosso SAC humano para emissão do código de postagem reversa dos Correios.";
         }
 
-        if (p.contains("frieren") || p.contains("sousou") || p.contains("himmel") || p.contains("fern")) {
-            return "🌿 **Frieren e a Jornada para o Além (Sousou no Frieren)**:\n\n" +
-                   "• **Previsão de Lançamentos:** No Brasil, a publicação oficial é da Panini. Os **Volumes 1 ao 12** estão disponíveis em nosso acervo, e o **Volume 13** tem previsão oficial para os próximos meses de 2025/2026, seguindo a periodicidade bimestral/trimestral da editora.\n" +
-                   "• **Edições Especiais na Mangazon:** Disponibilizamos edições avulsas e pacotes especiais com marcadores exclusivos e sobrecapas metalizadas.\n" +
-                   "• **Continuação após o Anime:** A 1ª temporada do anime (28 episódios) adapta os capítulos 1 ao 60. Para continuar a jornada no mangá, comece pelo **Volume 7 (Capítulo 61)**!\n" +
-                   "• **Dica de Compra:** Utilize o recurso **\"Espiar por Dentro\"** na vitrine para ler páginas de demonstração antes da compra.";
+        return filterAndSanitize(
+            "O serviço de inteligência artificial online está temporariamente em manutenção. " +
+            "Você pode pesquisar títulos diretamente pela barra de busca no topo do site, filtrar os volumes por Categoria (Shonen, Seinen, Shojo) " +
+            "ou consultar a aba **Guia de Leitura** para conferir a ordem canônica e arcos de cada obra."
+        );
+    }
+
+    /**
+     * Filtro de sanitização para garantir respostas limpas, diretas e coerentes.
+     * Elimina preâmbulos robóticos de IA e padroniza marcadores.
+     */
+    private String filterAndSanitize(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "";
         }
 
-        if (p.contains("one piece") || p.contains("luffy") || p.contains("gear 5")) {
-            return "🏴‍☠️ **One Piece (Eiichiro Oda)**:\n\n" +
-                   "• **Gear 5:** O despertar acontece no **Volume 103 (Capítulo 1044)** e a grande batalha ocorre nos **Volumes 104 e 105**!\n" +
-                   "• **Ordem de Leitura:** Inicie pelo **Volume 1 (Romance Dawn)**. Arcos recomendados: Alabasta (Vols 18–24), Marineford (Vols 56–60) e Wano (Vols 90–105).\n" +
-                   "• Todos os volumes canônicos disponíveis com envio expresso.";
+        String text = raw.trim();
+
+        // 1. Remover cercas de código markdown acidentais
+        text = text.replaceAll("(?i)^```(?:markdown)?\\s*([\\s\\S]*?)\\s*```$", "$1").trim();
+
+        // 2. Filtro de preâmbulos e clichês robóticos no início
+        text = text.replaceAll("(?i)^(?:com certeza|certamente|com prazer|olá[!.]?|olá,[^.\n]*[!.]?|aqui está[^.:\n]*[:.]?)\\s*", "").trim();
+        text = text.replaceAll("(?i)^(?:como especialista da mangazon|como consultor da mangazon|como assistente da mangazon)[^.\n]*[:.]?\\s*", "").trim();
+        text = text.replaceAll("(?i)^(?:sobre a sua (?:dúvida|pergunta)|em relação [aà] sua (?:dúvida|pergunta)|você perguntou sobre)[^.\n]*[:.]?\\s*", "").trim();
+
+        // 3. Normalizar marcadores de lista (* ou - soltos para bullet uniforme '• ')
+        text = text.replaceAll("(?m)^(\\s*)[*-]\\s+", "$1• ");
+
+        // 4. Limpar quebras de linha excessivas
+        text = text.replaceAll("\n{3,}", "\n\n");
+
+        if (!text.isEmpty()) {
+            text = Character.toUpperCase(text.charAt(0)) + (text.length() > 1 ? text.substring(1) : "");
         }
 
-        if (p.contains("berserk") || p.contains("guts") || p.contains("griffith")) {
-            return "🗡️ **Berserk (Kentaro Miura)**:\n\n" +
-                   "• **Por onde começar:** Comece pelo **Volume 1** ou pela prestigiada **Edição Deluxe Hardcover Vol. 1**.\n" +
-                   "• **Era de Ouro:** Abrange os Volumes 3 a 14, considerada uma das melhores obras de ficção de fantasia sombria.\n" +
-                   "• Classificação indicativa para maiores de 18 anos.";
-        }
-
-        if (p.contains("jujutsu") || p.contains("gojo") || p.contains("sukuna")) {
-            return "🤞 **Jujutsu Kaisen (Gege Akutami)**:\n\n" +
-                   "• **Incidente de Shibuya:** Abrange os **Volumes 10 ao 16 (Capítulos 79–136)**.\n" +
-                   "• **Dica de Leitura:** O **Volume 0** serve como prólogo perfeito antes do início da trama principal.";
-        }
-
-        if (p.contains("chainsaw") || p.contains("denji") || p.contains("makima")) {
-            return "🪚 **Chainsaw Man (Tatsuki Fujimoto)**:\n\n" +
-                   "• **Parte 1 (Segurança Pública):** Completa nos **Volumes 1 ao 11**.\n" +
-                   "• **Parte 2 (Academia):** Em publicação a partir do **Volume 12** em diante.\n" +
-                   "• Volumes avulsos e Box Sets disponíveis com envio imediato na Mangazon Store.";
-        }
-
-        if (p.contains("dandadan") || p.contains("okarun") || p.contains("momo")) {
-            return "🛸 **Dandadan (Yukinobu Tatsu)**:\n\n" +
-                   "• **Status no Brasil:** Publicação oficial pela Panini com volumes do 1 ao 10+ disponíveis na Mangazon.\n" +
-                   "• Edições com sobrecapa especial e envio com frete grátis express acima de R$ 99.";
-        }
-
-        if (p.contains("recomen") || p.contains("indica") || p.contains("parecido")) {
-            return "📚 **Recomendações da Mangazon Store:**\n\n" +
-                   "1. **Seinen & Fantasia:** *Berserk*, *Frieren*, *Vinland Saga*, *Tokyo Ghoul*.\n" +
-                   "2. **Shonen de Ação:** *One Piece*, *Jujutsu Kaisen*, *Chainsaw Man*, *Dandadan*.\n" +
-                   "3. **Completos:** *Demon Slayer* (23 volumes), *Death Note* (12 volumes).\n" +
-                   "💡 Experimente o filtro de categorias ou o Guia de Leitura no topo da vitrine!";
-        }
-
-        return "Olá! Sou o consultor de atendimento da **Mangazon Store**, a loja especializada em mangás e edições de colecionador.\n\n" +
-               "• **Como podemos te ajudar:** Posso te informar sobre previsão de novos volumes (Panini, JBC, NewPOP), ordem canônica de leitura, onde o anime para no mangá ou recomendar novas leituras.\n" +
-               "• **Dica da Loja:** Escolha o volume exato pelo **Seletor de Volumes** no card de cada mangá e use o recurso **\"Espiar por Dentro\"** para folhear páginas de demonstração antes da compra!";
+        return text.trim();
     }
 }

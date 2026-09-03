@@ -13,104 +13,69 @@ const PORT = 5173;
 app.use(express.json({ limit: '10mb' }));
 
 // ----------------------------------------------------
-// AI Endpoint (Mangazon Store Consultant)
+// AI Filtering Pipeline & Prompt Engineering
 // ----------------------------------------------------
-function generateLocalMangaAIResponse(prompt: string): string {
+
+/**
+ * Filtro de saída pós-processamento para garantir respostas limpas, diretas e coerentes.
+ * Remove preâmbulos robóticos de LLM, normaliza marcadores e elimina artefatos de formatação.
+ */
+export function sanitizeAndFilterAIResponse(raw: string): string {
+  if (!raw) return '';
+
+  let text = raw.trim();
+
+  // 1. Remover cercas de bloco de código acidentais (ex: ```markdown ... ```)
+  text = text.replace(/^```(?:markdown)?\s*([\s\S]*?)\s*```$/i, '$1').trim();
+
+  // 2. Filtro de preâmbulos e clichês de IA no início da resposta
+  const preamblePatterns = [
+    /^(?:com certeza|certamente|com prazer|olá[!,\.]?|olá,[^.\n]*[!,\.]?|aqui está[^.:\n]*[:.]?)\s*/i,
+    /^(?:como especialista da mangazon|como consultor da mangazon|como assistente da mangazon)[^.\n]*[:.]?\s*/i,
+    /^(?:sobre a sua (?:dúvida|pergunta)|em relação [aà] sua (?:dúvida|pergunta)|você perguntou sobre)[^.\n]*[:.]?\s*/i,
+    /^(?:compreendo perfeitamente[!,\.]?|entendo perfeitamente[!,\.]?)\s*/i,
+  ];
+
+  for (const pattern of preamblePatterns) {
+    text = text.replace(pattern, '').trim();
+  }
+
+  // 3. Normalizar marcadores de lista (* ou - soltos para bullet uniforme '• ')
+  text = text.replace(/^(\s*)\*\s+/gm, '$1• ');
+  text = text.replace(/^(\s*)-\s+/gm, '$1• ');
+
+  // 4. Limpar quebras de linha excessivas (3 ou mais consecutivas)
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  // 5. Garantir primeira letra maiúscula após remoção de preâmbulo
+  if (text.length > 0) {
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  return text.trim();
+}
+
+/**
+ * Resposta de contingência offline (SEM dados ou mangás mockados específicos).
+ * Trata apenas direitos do consumidor e orientações gerais quando a nuvem estiver indisponível.
+ */
+function generateLocalFallbackResponse(prompt: string): string {
   const p = prompt.toLowerCase();
-
-  if (p.includes('frieren') || p.includes('sousou') || p.includes('himmel') || p.includes('fern') || p.includes('stark')) {
-    return '🌿 **Frieren e a Jornada para o Além (Sousou no Frieren)**:\n\n' +
-      '• **Previsão de Lançamentos:** No Brasil, a publicação oficial é da Panini. Os **Volumes 1 ao 12** estão disponíveis no nosso catálogo, e o **Volume 13** tem previsão de chegada para os próximos meses de 2025/2026, mantendo o ritmo de publicação bimestral/trimestral da editora.\n' +
-      '• **Edições Especiais na Mangazon:** Temos tanto a edição padrão quanto as edições especiais com marcadores e postais colecionáveis.\n' +
-      '• **Continuação após o Anime:** A 1ª temporada do anime (28 episódios) adapta os capítulos 1 ao 60. Se você quer continuar a história, comece pelo **Volume 7 (Capítulo 61)**!\n' +
-      '• **Dica da Loja:** Você pode usar o botão **"Espiar por Dentro"** no card de Frieren para folhear as primeiras páginas antes de comprar.';
-  }
-
-  if (p.includes('one piece') || p.includes('luffy') || p.includes('gear 5')) {
-    return '🏴‍☠️ **One Piece (Eiichiro Oda)**:\n\n' +
-      '• **Gear 5:** O despertar da Fruta do Humano Modelo Nika acontece no **Volume 103 (Capítulo 1044)** e a batalha atinge o ápice no **Volume 104 e 105** no clímax de Wano!\n' +
-      '• **Ordem de Leitura:** Recomendamos iniciar do **Volume 1 (Romance Dawn)**. Arcos cruciais incluem Alabasta (Vols 18–24), Marineford (Vols 56–60) e País de Wano (Vols 90–105).\n' +
-      '• **Na Mangazon Store:** Todos os volumes estão disponíveis em formato Paperback com frete grátis express.';
-  }
-
-  if (p.includes('berserk') || p.includes('guts') || p.includes('griffith')) {
-    return '🗡️ **Berserk (Kentaro Miura)**:\n\n' +
-      '• **Por onde começar:** Comece pelo **Volume 1 (Espadachim Negro)** ou diretamente pela **Edição Deluxe Hardcover Vol. 1**, que reúne os primeiros 3 volumes originais em capa dura e formato oversized.\n' +
-      '• **Arcos Imperdíveis:** A **Era de Ouro (Golden Age - Vols 3 a 14)** é uma das maiores obras-primas das narrativas de dark fantasy mundial.\n' +
-      '• **Classificação:** Recomendado para maiores de 18 anos devido a temas maduros e violência explícita.';
-  }
-
-  if (p.includes('jujutsu') || p.includes('gojo') || p.includes('sukuna')) {
-    return '🤞 **Jujutsu Kaisen (Gege Akutami)**:\n\n' +
-      '• **Arco de Shibuya:** Um dos arcos mais aclamados se estende dos **Volumes 10 ao 16 (Capítulos 79–136)**.\n' +
-      '• **Dica Canônica:** Antes do volume 1, você também pode ler o **Volume 0 (Jujutsu Kaisen 0)**, focado em Yuta Okkotsu.\n' +
-      '• **Disponibilidade:** Todos os volumes até o clímax da Batalha de Shinjuku disponíveis para envio imediato.';
-  }
-
-  if (p.includes('chainsaw') || p.includes('denji') || p.includes('makima') || p.includes('pochita')) {
-    return '🪚 **Chainsaw Man (Tatsuki Fujimoto)**:\n\n' +
-      '• **Parte 1 (Segurança Pública):** Completa nos **Volumes 1 ao 11**.\n' +
-      '• **Parte 2 (Academia):** Em publicação a partir do **Volume 12** em diante.\n' +
-      '• **Disponibilidade:** Volumes avulsos e Box Sets com envio imediato na Mangazon Store.';
-  }
-
-  if (p.includes('dandadan') || p.includes('okarun') || p.includes('momo')) {
-    return '🛸 **Dandadan (Yukinobu Tatsu)**:\n\n' +
-      '• **Status no Brasil:** Publicação oficial pela Panini com volumes do 1 ao 10+ disponíveis com frete expresso na Mangazon.\n' +
-      '• **Edições:** Acompanha sobrecapa e qualidade gráfica impecável. Sucesso imperdível!';
-  }
-
-  if (p.includes('solo leveling') || p.includes('sung jinwoo') || p.includes('jin-woo')) {
-    return '🗡️ **Solo Leveling (Chugong / DUBU)**:\n\n' +
-      '• **Formato:** Manhwa totalmente colorido em papel couchê de alta gramatura, publicado pela NewPOP.\n' +
-      '• **Volumes:** Coleção completa em publicação com os principais arcos disponíveis na Mangazon Store.';
-  }
-
-  if (p.includes('demon slayer') || p.includes('kimetsu') || p.includes('tanjiro')) {
-    return '⚔️ **Demon Slayer: Kimetsu no Yaiba (Koyoharu Gotouge)**:\n\n' +
-      '• **Status da Obra:** Série completa em **23 volumes** (205 capítulos).\n' +
-      '• **Castelo Infinito:** O clímax com as Luas Superiores e Muzan começa a partir do **Volume 16** e vai até o Volume 23.';
-  }
-
-  if (p.includes('hunter') || p.includes('gon') || p.includes('killua')) {
-    return '🎣 **Hunter x Hunter (Yoshihiro Togashi)**:\n\n' +
-      '• **Continuação após o Anime (2011):** O anime finaliza no capítulo 339 (Volume 32). Para continuar a história na Expedição do Continente Sombrio e Guerra de Sucessão, comece do **Volume 33** em diante!';
-  }
 
   if (p.includes('humano') || p.includes('atendente') || p.includes('sac') || p.includes('procon') || p.includes('reclama')) {
     return '🤝 **Atendimento Humano (SAC Mangazon)**:\n\n' +
       'Em conformidade com o **Decreto Federal nº 11.034/2022 (Regulamentação do SAC)** e o Código de Defesa do Consumidor, você tem o direito garantido de ser atendido por um operador humano a qualquer momento.\n\n' +
-      '• **Como acionar agora:** Você pode clicar no botão **"Atendimento Humano (SAC)"** no topo desta janela para abrir a central com **Número de Protocolo oficial** gerado na hora!\n' +
-      '• **Canais Disponíveis:** Chat ao Vivo com operador humano e WhatsApp oficial do SAC (Seg. a Sáb. das 08h às 20h).';
+      '• **Como acionar:** Clique no botão **"Atendimento Humano (SAC)"** no topo desta janela ou acesse a aba **"Ajuda & SAC (CDC)"** no menu da loja para receber seu **Número de Protocolo oficial** gerado na hora e conversar com nossa equipe por Chat ao Vivo ou WhatsApp.';
   }
 
   if (p.includes('devol') || p.includes('arrepend') || p.includes('troca') || p.includes('defeito') || p.includes('avaria')) {
     return '📦 **Trocas e Devoluções (Código de Defesa do Consumidor)**:\n\n' +
-      '• **Direito de Arrependimento (Art. 49 do CDC):** Em compras online, você tem até **7 dias corridos** após o recebimento para devolver o produto gratuitamente com reembolso 100% integral (produto e frete original).\n' +
-      '• **Troca por Defeito Gráfico ou Avaria (Art. 18 do CDC):** Se o mangá apresentar qualquer amassado ou falha de encadernação, realizamos a troca imediata sem qualquer custo.\n' +
-      '• **Como solicitar:** Abra a aba **"Ajuda & SAC (CDC)"** no topo do site ou acione o Atendimento Humano para gerar a etiqueta de postagem reversa gratuita dos Correios!';
+      '• **Direito de Arrependimento (Art. 49 do CDC):** Prazo legal de até **7 dias corridos** após o recebimento para devolução com reembolso 100% integral (produto e frete original).\n' +
+      '• **Garantia contra Vícios ou Defeitos (Art. 18 do CDC):** Troca imediata sem custo caso o mangá apresente defeitos gráficos ou avarias de transporte.\n' +
+      '• **Como solicitar:** Acesse o menu **"Ajuda & SAC (CDC)"** ou acione o Atendimento Humano para emitir o código de postagem reversa dos Correios.';
   }
 
-  if (p.includes('recomen') || p.includes('indica') || p.includes('parecido') || p.includes('melhor')) {
-    if (p.includes('seinen') || p.includes('sombrio') || p.includes('adulto')) {
-      return '💀 **Recomendações Seinen & Dark Fantasy:**\n\n' +
-        '1. **Berserk** — A quintessência da fantasia sombria.\n' +
-        '2. **Vinland Saga** — Épico viking histórico profundo sobre vingança e redenção.\n' +
-        '3. **Tokyo Ghoul** — Terror psicológico urbano e batalhas sobrenaturais.\n' +
-        '4. **Monster (Naoki Urasawa)** — Suspense policial psicológico espetacular.';
-    }
-    return '📚 **Recomendações de Destaque na Mangazon Store:**\n\n' +
-      '1. **Para Aventura e Ação:** *One Piece*, *Jujutsu Kaisen*, *Chainsaw Man*.\n' +
-      '2. **Para Fantasia Madura:** *Berserk (Deluxe)*, *Frieren*, *Attack on Titan*.\n' +
-      '3. **Para Obras Completas:** *Demon Slayer* (23 volumes), *Death Note* (12 volumes/Black Edition).\n' +
-      'Dica: Utilize nossa barra de filtros por Categoria (Shonen, Seinen, Shojo) ou consulte a aba Guia de Leitura!';
-  }
-
-  return 'Olá! Sou o consultor de atendimento da **Mangazon Store**, especializado em mangás nacionais e importados.\n\n' +
-    '• **Como posso te ajudar:** Informações sobre volumes específicos, previsão de novos lançamentos (Panini, JBC, NewPOP), ordem canônica de leitura e onde o anime para no mangá.\n' +
-    '• **Dica de Compra na Mangazon:** Você pode escolher qualquer volume diretamente pelo **Seletor de Volumes** no card do produto e clicar em **"Espiar por Dentro"** para ver páginas de demonstração antes de adicionar ao carrinho!\n' +
-    '• **Atendimento ao Consumidor (SAC):** Para devoluções pelo Art. 49 do CDC, trocas ou falar com um operador humano, clique em **"Atendimento Humano (SAC)"** no topo deste modal.\n\n' +
-    'Se desejar saber sobre alguma série em específico (como *Frieren*, *One Piece*, *Berserk*, *Jujutsu Kaisen* ou lançamentos recentes), basta me dizer o título!';
+  return 'O serviço de consulta online da inteligência artificial está temporariamente indisponível. Você pode navegar pelos títulos diretamente pelos filtros de Categoria (Shonen, Seinen, Shojo), buscar volumes específicos na barra de pesquisa no topo ou consultar a aba **Guia de Leitura** para cronologias e arcos canônicos.';
 }
 
 function getGeminiApiKey(): string | undefined {
@@ -118,6 +83,37 @@ function getGeminiApiKey(): string | undefined {
   dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true });
   return process.env.GEMINI_API_KEY;
 }
+
+// ----------------------------------------------------
+// Prompt do Sistema (Engenharia de Prompt para Respostas Limpas, Diretas e Coerentes)
+// ----------------------------------------------------
+const MANGAZON_SYSTEM_INSTRUCTION = `Você é o consultor de vendas e atendimento especialista da Mangazon Store, a principal loja online brasileira dedicada a mangás, manhwas e edições de colecionador.
+
+# DIRETRIZES FUNDAMENTAIS DE RESPOSTA (ENGENHARIA DE PROMPT E FILTRAGEM):
+1. **DIRETO AO PONTO (ZERO ENROLAÇÃO)**:
+   - Responda a dúvida do cliente imediatamente no primeiro parágrafo.
+   - NUNCA use saudações vazias ou introduções clichês de IA (ex: JAMAIS diga "Com certeza!", "Certamente!", "Olá, como assistente...", "Sobre a sua dúvida sobre...", "Você perguntou sobre...").
+   - NUNCA repita a pergunta do usuário.
+   - NUNCA diga que é uma inteligência artificial ou modelo de linguagem. Fale com a naturalidade, autoridade e precisão de um livreiro experiente da Mangazon.
+
+2. **RESPOSTAS LIMPAS, DIRETAS E COERENTES**:
+   - Seja conciso e elegante: responda de forma objetiva em 2 a 4 parágrafos curtos ou tópicos ('• ').
+   - Não seja prolixo. Elimine adjetivações excessivas e frases de transição dispensáveis.
+
+3. **CONHECIMENTO FACTUAL DO MERCADO BRASILEIRO E ACERVO**:
+   - Forneça informações reais e precisas sobre volumes lançados no Brasil, editoras nacionais (Panini, JBC, NewPOP, Pipoca & Nanquim, Conrad), arcos canônicos e equivalência anime/mangá (onde o anime termina e qual volume o cliente deve comprar para continuar).
+   - Formatos da loja: Paperback (capa comum), Deluxe Hardcover (capa dura de luxo / 3-em-1) e Collector Box Sets (caixas de colecionador).
+   - Diferenciais da loja: "Seletor de Volumes" (escolha do volume específico no card), "Espiar por Dentro" (Look Inside para folhear páginas de demonstração), "Guia de Leitura" e cupons MANGA20 e OTAKU10.
+
+4. **DIREITO DO CONSUMIDOR E ATENDIMENTO HUMANO (Decreto SAC nº 11.034/2022 e CDC)**:
+   - Se o cliente perguntar sobre falar com atendente humano, registrar reclamação, solicitar cancelamento, devolução ou estorno:
+     • Esclareça objetivamente o Artigo 49 do CDC (Direito de Arrependimento de 7 dias corridos com reembolso 100% integral e frete reverso gratuito).
+     • Oriente o cliente diretamente a clicar no botão "Atendimento Humano (SAC)" no topo da janela ou na aba "Ajuda & SAC (CDC)" no topo do site para falar ao vivo com um atendente e receber seu Número de Protocolo oficial na hora.
+
+5. **FORMATAÇÃO VISUAL IMPECÁVEL**:
+   - Use negrito estrategicamente apenas para títulos de obras, números de volumes, capítulos e termos essenciais (**Volume X**, **Capítulo Y**).
+   - NUNCA use cabeçalhos gigantes (# ou ##) que poluem o visual do chat; prefira tópicos ('• ') e negrito.
+   - NUNCA deixe asteriscos soltos ou caracteres quebrados.`;
 
 // Endpoint de Consulta de IA
 app.post('/api/ai/ask', async (req, res) => {
@@ -134,61 +130,34 @@ app.post('/api/ai/ask', async (req, res) => {
 
     const apiKey = getGeminiApiKey();
 
-    // Se houver uma chave real configurada no .env, chama a API Gemini via @google/genai com timeout resiliente de 25s
+    // Se houver uma chave real configurada no .env, chama a API Gemini via @google/genai com timeout resiliente
     if (apiKey && apiKey !== 'MY_GEMINI_API_KEY' && apiKey.trim().length > 10) {
       const modelsToTry = [
-        'gemini-flash-lite-latest',
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite',
         'gemini-flash-latest',
         'gemini-3.5-flash',
-        'gemini-pro-latest'
+        'gemini-flash-lite-latest',
       ];
       for (const modelName of modelsToTry) {
         try {
           const ai = new GoogleGenAI({ apiKey });
           const callPromise = ai.models.generateContent({
             model: modelName,
-            contents: `Você é o consultor especialista de vendas e atendimento da Mangazon Store, a maior loja online de mangás do Brasil.
-
-QUEM VOCÊ É E ONDE VOCÊ TRABALHA:
-- Você trabalha no atendimento ao cliente da Mangazon Store (e-commerce oficial focado em mangás).
-- Seu tom deve ser o de um livreiro especialista, acolhedor, apaixonado por mangás, direto ao ponto e prestativo.
-- NUNCA repita a pergunta do usuário como introdução (ex: JAMAIS diga "Sobre sua dúvida sobre..." ou "Você perguntou sobre..."). Vá direto à resposta útil!
-- NUNCA diga que é uma IA ou modelo de linguagem. Você é o assistente oficial da loja Mangazon.
-
-LEI DO CONSUMIDOR E ATENDIMENTO HUMANO (Decreto SAC nº 11.034/2022 e CDC):
-- Se o cliente perguntar sobre falar com um atendente humano, fazer reclamação, solicitar cancelamento, devolução ou estorno por arrependimento (Art. 49 do CDC), informe com gentileza e respeito que a Mangazon garante o direito imediato de transferência para operador humano com Número de Protocolo oficial gerado na hora, orientando o cliente a clicar no botão "Atendimento Humano (SAC)" disponível no topo da janela ou na aba "Ajuda & SAC (CDC)" no topo do site.
-- Lembre que devoluções por arrependimento são gratuitas em até 7 dias corridos após o recebimento, com frete de logística reversa pago pela loja e reembolso integral.
-
-RECURSOS E CATÁLOGO DA MANGAZON STORE:
-- Obras disponíveis em nosso catálogo:
-  • Frieren (Sousou no Frieren / Frieren e a Jornada para o Além): Sucesso absoluto publicado pela Panini no Brasil. Temos volumes do 1 ao 12 em estoque, e o Volume 13 tem previsão de lançamento oficial no Brasil nos próximos meses (publicação regular bimestral/trimestral da Panini). Oferecemos também edições especiais com brindes e marcadores. Se a pessoa veio do anime (28 episódios), a história continua no mangá a partir do Volume 7 (Capítulo 61).
-  • One Piece: Obra de Eiichiro Oda (volumes 1 ao 108+), com o despertar do Gear 5 no Volume 103 (Capítulo 1044) e clímax de Wano nos vols 104 e 105.
-  • Berserk: Obra-prima de Kentaro Miura, disponível em edições avulsas e na aclamada Edição Deluxe Hardcover 3-em-1 em capa dura.
-  • Dandadan, Chainsaw Man, Jujutsu Kaisen, Solo Leveling, Demon Slayer (completo em 23 volumes), Attack on Titan, Spy x Family, Tokyo Ghoul, Vinland Saga, Vagabond, Naruto, Bleach, Hunter x Hunter, Death Note.
-- Formatos e Serviços da loja:
-  • Formatos: Paperback (capa comum), Deluxe Hardcover (capa dura de luxo) e Collector Box Sets (caixas especiais).
-  • Seletor de Volumes: o cliente pode escolher o volume exato desejado (Vol. 1 ao mais recente) diretamente no card ou na página do título.
-  • "Espiar por Dentro" (Look Inside): recurso interativo para folhear as primeiras páginas de qualquer mangá antes de comprar.
-  • "Guia de Leitura": aba com cronologia de arcos e equivalência mangá/anime.
-  • Frete Grátis Express para compras acima de R$ 99 e cupons de desconto OTAKU10 e MANGA20.
-
-Responda em português do Brasil de forma clara, prestativa e bem formatada em tópicos (Markdown).
+            contents: `${MANGAZON_SYSTEM_INSTRUCTION}
 
 Pergunta do cliente: ${userPrompt}`,
           });
 
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout ao conectar com o serviço de nuvem')), 12000)
+            setTimeout(() => reject(new Error('Timeout ao conectar com o serviço de nuvem')), 6000)
           );
 
           const response: any = await Promise.race([callPromise, timeoutPromise]);
 
           if (response && response.text) {
+            const cleanAnswer = sanitizeAndFilterAIResponse(response.text);
             return res.json({
               success: true,
-              answer: response.text
+              answer: cleanAnswer
             });
           }
         } catch (modelErr: any) {
@@ -197,8 +166,8 @@ Pergunta do cliente: ${userPrompt}`,
       }
     }
 
-    // Resposta do Motor de Conhecimento Local (fallback offline)
-    const localAnswer = generateLocalMangaAIResponse(userPrompt);
+    // Resposta de contingência limpa (sem dados mockados)
+    const localAnswer = sanitizeAndFilterAIResponse(generateLocalFallbackResponse(userPrompt));
     return res.json({
       success: true,
       answer: localAnswer
