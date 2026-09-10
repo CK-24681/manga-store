@@ -1,4 +1,4 @@
-package com.mangazon.api;
+package com.mangazon.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
