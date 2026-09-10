@@ -102,8 +102,8 @@ public class MangaDexService {
             return new MangaPage(result, total, page, limit);
 
         } catch (Exception e) {
-            log.error("Failed to fetch from AniList API: {}", e.getMessage(), e);
-            return new MangaPage(Collections.emptyList(), 0, page, limit);
+            log.error("Failed to fetch from AniList API: {}. Using fallback data.", e.getMessage());
+            return buildFallbackPage(query, category, limit, page);
         }
     }
 
@@ -136,8 +136,10 @@ public class MangaDexService {
             }
             return Optional.of(mapToManga(response.data.Media, 1));
         } catch (Exception e) {
-            log.error("Failed to fetch manga {}: {}", id, e.getMessage());
-            return Optional.empty();
+            log.error("Failed to fetch manga {}: {}. Searching fallback data.", id, e.getMessage());
+            return getFallbackMangaList().stream()
+                    .filter(m -> m.getId().equals(id))
+                    .findFirst();
         }
     }
 
@@ -445,6 +447,155 @@ public class MangaDexService {
 
     private double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
+    }
+
+    // -----------------------------------------------------------------------
+    // Fallback data — used when AniList API is unavailable
+    // -----------------------------------------------------------------------
+
+    private MangaPage buildFallbackPage(String query, String category, int limit, int page) {
+        List<Manga> all = getFallbackMangaList();
+
+        // Simple filter by query
+        if (query != null && !query.trim().isEmpty()) {
+            String q = query.trim().toLowerCase();
+            all = all.stream()
+                    .filter(m -> m.getTitle().toLowerCase().contains(q)
+                            || (m.getSynopsis() != null && m.getSynopsis().toLowerCase().contains(q)))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        // Filter by category
+        if (category != null && !category.equals("All") && !category.trim().isEmpty()) {
+            String cat = category.trim();
+            all = all.stream()
+                    .filter(m -> cat.equalsIgnoreCase(m.getCategory()))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        int total = all.size();
+        int from = Math.min((page - 1) * limit, total);
+        int to   = Math.min(from + limit, total);
+        return new MangaPage(all.subList(from, to), total, page, limit);
+    }
+
+    private List<Manga> getFallbackMangaList() {
+        // Static dataset — covers the most popular titles across all categories
+        Object[][] data = {
+            // {id, title, jaTitle, category, author, coverUrl, rating, ratingCount, volumes, basePrice, synopsis}
+            {"100642", "One Piece", "ワンピース", "Shonen", "Eiichiro Oda",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx100642-BEQp7n1OEQOJ.jpg",
+             4.9, 2800000, 108, 6.90,
+             "Gol D. Roger escondeu seu tesouro na Grand Line. O jovem Monkey D. Luffy parte ao mar com poderes de borracha para se tornar o Rei dos Piratas."},
+            {"30013", "Naruto", "ナルト", "Shonen", "Masashi Kishimoto",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-RerOEfqRMHtZ.jpg",
+             4.8, 1900000, 72, 7.80,
+             "Naruto Uzumaki é um jovem ninja órfão que carrega a Raposa de Nove Caudas e sonha em se tornar Hokage."},
+            {"30002", "Berserk", "ベルセルク", "Seinen", "Kentaro Miura",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30002-KFEsHVjvMmXs.jpg",
+             4.9, 950000, 42, 14.50,
+             "Guts, o Espadachim Negro, busca vingança contra Griffith em uma epopeia sombria de fantasia medieval."},
+            {"87216", "Jujutsu Kaisen", "呪術廻戦", "Shonen", "Gege Akutami",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx87216-TtGNPsR0FVj7.jpg",
+             4.8, 1200000, 30, 6.60,
+             "Yuji Itadori engole um dedo de Sukuna e entra na Escola de Jujutsu para dominar as maldições."},
+            {"85449", "Chainsaw Man", "チェンソーマン", "Shonen", "Tatsuki Fujimoto",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx85449-ZAMFdXQvJbXD.jpg",
+             4.7, 850000, 18, 6.40,
+             "Denji se funde com o demônio Pochita e renasce como Chainsaw Man, caçador de demônios a serviço do governo."},
+            {"30026", "Bleach", "ブリーチ", "Shonen", "Tite Kubo",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30026-3aQPH4m3XKQP.jpg",
+             4.6, 1100000, 74, 7.50,
+             "Ichigo Kurosaki recebe poderes de Shinigami e combate entidades espirituais Hollows para proteger as almas."},
+            {"49433", "Attack on Titan", "進撃の巨人", "Shonen", "Hajime Isayama",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx49433-1rlxUqNJI3OK.jpg",
+             4.9, 1600000, 34, 7.40,
+             "A humanidade sobrevive atrás de muralhas contra Titãs. Eren jura exterminar cada um após perder sua mãe."},
+            {"85470", "Demon Slayer", "鬼滅の刃", "Shonen", "Koyoharu Gotouge",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx85470-c4TXJZP5MGFY.jpg",
+             4.8, 1400000, 23, 6.20,
+             "Tanjiro busca uma cura para sua irmã transformada em demônio enquanto caça as criaturas da noite."},
+            {"2541", "Death Note", "デスノート", "Seinen", "Tsugumi Ohba",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx2541-yMh6RAtIkBbB.jpg",
+             4.9, 1300000, 12, 12.90,
+             "Light Yagami usa um caderno sobrenatural que mata qualquer pessoa cujo nome estiver escrito nele."},
+            {"25", "Fullmetal Alchemist", "鋼の錬金術師", "Shonen", "Hiromu Arakawa",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx25-sBNdTIJGkYG5.jpg",
+             4.9, 1050000, 27, 8.90,
+             "Os irmãos Elric violam o maior tabu da alquimia e partem em busca da Pedra Filosofal para restaurar seus corpos."},
+            {"46234", "Hunter x Hunter", "HUNTER×HUNTER", "Shonen", "Yoshihiro Togashi",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx46234-A4c5Z99tPEoQ.jpg",
+             4.9, 870000, 38, 7.20,
+             "Gon parte em busca do pai lendário tornando-se Hunter, forjando amizades épicas no implacável exame."},
+            {"104458", "Spy x Family", "SPY×FAMILY", "Shonen", "Tatsuya Endo",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx104458-k3KYGtfUuKlc.jpg",
+             4.7, 760000, 13, 6.90,
+             "Um espião monta uma família falsa: uma telepata e uma assassina. Nenhum sabe o segredo do outro."},
+            {"74", "Dragon Ball", "ドラゴンボール", "Shonen", "Akira Toriyama",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx74-B4lGAMNlXfmL.jpg",
+             4.8, 2100000, 42, 5.90,
+             "Goku busca as Esferas do Dragão em uma saga épica de artes marciais que influenciou gerações."},
+            {"98396", "Solo Leveling", "나 혼자만 레벨업", "Seinen", "Chugong",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx98396-R6JjQQJVJTzO.jpg",
+             4.8, 930000, 15, 16.50,
+             "Sung Jin-Woo, o caçador mais fraco do mundo, ganha uma interface misteriosa e começa a subir de nível ilimitadamente."},
+            {"56105", "Tokyo Ghoul", "東京喰種", "Seinen", "Sui Ishida",
+             "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx56105-OWRM5lh6TGQE.jpg",
+             4.6, 720000, 14, 8.20,
+             "Ken Kaneki sobrevive a um ataque e desperta como meio-ghoul, buscando sobreviver no submundo de Tóquio."}
+        };
+
+        List<Manga> list = new ArrayList<>();
+        int rank = 1;
+        for (Object[] d : data) {
+            String id       = (String)  d[0];
+            String title    = (String)  d[1];
+            String jaTitle  = (String)  d[2];
+            String cat      = (String)  d[3];
+            String author   = (String)  d[4];
+            String cover    = (String)  d[5];
+            double rating   = (Double)  d[6];
+            int ratingCount = (Integer) d[7];
+            int volumes     = (Integer) d[8];
+            String synopsis = (String)  d[10];
+
+            Manga m = new Manga();
+            m.setId(id);
+            m.setTitle(title);
+            m.setJapaneseTitle(jaTitle);
+            m.setCategory(cat);
+            m.setAuthor(author);
+            m.setArtist(author);
+            m.setPublisher("Panini Mangás / Shueisha");
+            m.setCoverImage(cover);
+            m.setPreviewImages(List.of(cover));
+            m.setSynopsis(synopsis);
+            m.setRating(rating);
+            m.setRatingCount(ratingCount);
+            m.setRatingDistribution(Map.of(5, 75, 4, 15, 3, 6, 2, 3, 1, 1));
+            m.setVolumesCount(volumes);
+            m.setCurrentVolume(Math.max(1, volumes > 1 ? volumes - 2 : volumes));
+            m.setRank(rank);
+            m.setAmazonChoice(rank <= 3);
+            m.setBestSeller(rank <= 10);
+            m.setBestSellerCategory(cat + " Manga");
+            m.setPrimeEligible(true);
+            m.setAgeRating("Classificação: 14+");
+            m.setFeaturedQuote("'" + title + "' — Uma das obras mais aclamadas mundialmente.");
+            m.setAnimeAdaptation("Adaptação em anime disponível nos principais streamings");
+
+            Random rng = seededRandom(Integer.parseInt(id.replaceAll("\\D", "").substring(0, Math.min(id.replaceAll("\\D", "").length(), 8))));
+            m.setPages(192 + rng.nextInt(60));
+            m.setIsbn("978-" + (1000000000L + (long)(rng.nextInt(999999999))));
+            m.setReleaseDate("1 de Janeiro de 2024");
+            m.setFormats(resolveRealisticFormats(title, cat, rank, m.getPages(), rng));
+            m.setTags(new ArrayList<>());
+            m.setReviews(generateSampleReviews(id, title, rank));
+            m.setFrequentlyBoughtTogetherIds(new ArrayList<>());
+
+            list.add(m);
+            rank++;
+        }
+        return list;
     }
 
     // --- DTOs for AniList ---
