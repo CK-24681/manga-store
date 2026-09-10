@@ -8,11 +8,11 @@ import {
   AI_RECOMMENDED_MODELS,
   sanitizeAndFilterAIResponse,
   generateLocalFallbackResponse,
-} from './src/config/aiPromptConfig';
+} from './config/aiPromptConfig';
 
-// Carrega variáveis de ambiente canônicas da raiz do projeto (.env)
-dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Carrega variáveis de ambiente canônicas da raiz do projeto (config/.env)
+dotenv.config({ path: path.resolve(process.cwd(), '../config/.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'config/.env') });
 
 const app = express();
 const PORT = 5173;

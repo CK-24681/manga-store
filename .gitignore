@@ -15,9 +15,9 @@ coverage/
 *.log
 
 # Variáveis de ambiente e segredos (NUNCA commitados no Git)
-.env
-.env.*
-!.env.example
+config/.env
+config/.env.*
+!config/.env.example
 
 # Arquivos de IDE e Sistema Operacional
 .DS_Store
